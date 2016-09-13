@@ -2,18 +2,18 @@
 # Makefile for PCjr ASM Game project
 #
 ifeq ($(OS),Windows_NT)
-  NASM="$(USERPROFILE)\AppData\Local\NASM\nasm"
-  DOSBOX="$(ProgramFiles)\DOSBox-0.74\dosbox"
-  RM=cmd \/C del
+	NASM="$(USERPROFILE)\AppData\Local\NASM\nasm"
+	DOSBOX="$(ProgramFiles)\DOSBox-0.74\dosbox"
+	RM=cmd \/C del
 else
-  NASM=nasm
-  RM=rm
-  UNAME_S := $(shell uname -s)
-  ifeq ($(UNAME_S),Darwin)
-    DOSBOX=/Applications/DOSBox.app/Contents/MacOS/DOSBox
-  else # assume Linux
-    DOSBOX=DISPLAY=:0 dosbox
-  endif
+	NASM=nasm
+	RM=rm
+	UNAME_S := $(shell uname -s)
+	ifeq ($(UNAME_S),Darwin)
+		DOSBOX=/Applications/DOSBox.app/Contents/MacOS/DOSBox
+	else # assume Linux
+		DOSBOX=DISPLAY=:0 dosbox
+	endif
 endif
 
 TARGET=test
