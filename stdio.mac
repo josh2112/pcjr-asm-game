@@ -1,0 +1,15 @@
+; stdio.mac: Input/output routines for 8088 assembly
+
+; Much like C/C++, these %ifndef/%define/%endif keep the file from being
+; accidentally included multiple times
+%ifndef STDIO_MAC
+%define STDIO_MAC
+
+; Prints the given '$'-terminated string.
+%macro print 1
+	mov dx, %1
+	mov ah, 9h
+	int 21h
+%endmacro
+
+%endif ; STDIO_MAC
