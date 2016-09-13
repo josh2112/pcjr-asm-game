@@ -8,14 +8,49 @@ jmp main
 
 main:
 
-mov ax, -1234         ; Load AX with the number we want to print
-mov di, buf16         ; Load DI with the address of an empty buffer
+; Get the initial video mode and save it to [originalVideoMode]
+mov ax, 0f00h                ; AH <- 0x0f (get video mode)
+int 10h                      ; Call INT10h fn 0x0f which will store the current video mode in AL
+mov [originalVideoMode], al  ; Store it into the byte pointed to by originalVideoMode.
 
-call int_to_string    ; Call our 'int-to-string' procedure to format the number
+; Change the video mode to Mode 9 (320x200, 16 colors)
+mov ax, 9h                   ; AH <- 0x00 (set video mode), AL <- 9 (new mode)
+int 10h                      ; Call INT10h fn 0 to change the video mode
 
-print buf16           ; Call our 'print' macro to print the formatted number
+; Format originalVideoMode to a string and print it. Nothing new here!
+print str_orgVideoMode
+intToString [originalVideoMode]
+println buf16
 
-mov ax, 4c00h         ; Call INT21h fn 0x4c to exit the program
+; Do the same thing with the new video mode (9).
+print str_newVideoMode
+intToString 9
+println buf16
+
+; Print 'Press any key to continue'
+println str_pressAnyKey
+
+; Call INT21h fn 8 (character input without echo) to wait for a keypress
+waitForAnyKey
+
+; Change the video mode back to whatever it was before (the value stored in
+; originalVideoMode)
+mov al, [originalVideoMode]
+xor ah, ah
+int 10h
+
+; Exit the program
+mov ax, 4c00h
 int 21h
 
-buf16: times 16 db 0  ; An empty 16-byte buffer
+section .data
+
+str_orgVideoMode: db 'Original video mode: $'
+str_newVideoMode: db 'New video mode: $'
+str_pressAnyKey: db 'Press any key to continue', 0dh, 0ah, '$'
+str_crlf: db 0dh, 0ah, '$'
+
+section .bss
+
+originalVideoMode: resb 1
+buf16: resb 16

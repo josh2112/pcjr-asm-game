@@ -1,4 +1,10 @@
 ; stdio.mac: Input/output routines for 8088 assembly
+;
+; Expects the following initialized data:
+; str_crlf: db 0dh, 0ah, '$'
+;
+; and the following uninitialized data:
+; buf16: resb 16
 
 ; Much like C/C++, these %ifndef/%define/%endif keep the file from being
 ; accidentally included multiple times
@@ -9,6 +15,24 @@
 %macro print 1
 	mov dx, %1
 	mov ah, 9h
+	int 21h
+%endmacro
+
+; Prints the given '$'-terminated string and newline.
+%macro println 1
+	print %1
+	print str_crlf
+%endmacro
+
+%macro intToString 1
+  mov ax, %1
+  mov di, buf16
+  call int_to_string
+%endmacro
+
+; Waits for a key press using int 21h fn 08h (char input without echo)
+%macro waitForAnyKey 0
+	mov ah, 08h
 	int 21h
 %endmacro
 
