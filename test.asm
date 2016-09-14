@@ -30,6 +30,11 @@ println buf16
 ; Print 'Press any key to continue'
 println str_pressAnyKey
 
+mov ax, 0xb800
+mov es, ax
+xor si, si
+mov byte [es:si], 0aah
+
 ; Call INT21h fn 8 (character input without echo) to wait for a keypress
 waitForAnyKey
 

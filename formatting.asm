@@ -24,7 +24,7 @@ int_to_string:
   .buildString:
     pop ax            ; Pop out the next digit
     add al, '0'       ; Add 48 to get the ascii value
-    stosb             ; Store the char in AL into [ES:DI], then increment DI
+    stosb             ; Store the char in AL into [DI], then increment DI
     loop .buildString
   mov byte [di], '$'  ; Terminate the string
   ret
