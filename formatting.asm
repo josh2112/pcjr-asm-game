@@ -6,9 +6,12 @@
 %define FORMATTING_ASM
 
 ; Converts the signed integer in AX to a string and puts it in [DI]
+; Returns the result (the original DI pointer) in AX
 int_to_string:
+  push di             ; Save the original DI pointer so we can pop it out
+                      ; and return it as AX
   mov bx, 10          ; Load divisor and clear counter
-  mov cx, 0
+  xor cx, cx
   test ax, ax
   jns .peelOffDigits  ; Is AX signed? If not, go to 'continue'
   mov byte [di], '-'  ; Put a negative sign on the string and increment our pointer
@@ -27,6 +30,7 @@ int_to_string:
     stosb             ; Store the char in AL into [DI], then increment DI
     loop .buildString
   mov byte [di], '$'  ; Terminate the string
+  pop ax              ; Pop the original DI into AX
   ret
 
 %endif ; FORMATTING_ASM

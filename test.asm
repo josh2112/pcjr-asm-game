@@ -1,10 +1,29 @@
+; test.asm: Playing around with IBM PCjr text, graphics and sound routines
+
 [cpu 8086]
 [org 100h]
+
+%include 'stdio.mac'
+%include 'graphics.mac'
+
+section .data
+
+str_orgVideoMode: db 'Original video mode: $'
+str_newVideoMode: db 'New video mode: $'
+str_pressAnyKey: db 'Press any key to continue$'
+str_crlf: db 0xa, 0xd, '$'
+
+section .bss
+
+originalVideoMode: resb 1
+buf16: resb 16
+
+section .text
 
 jmp main
 
 %include 'formatting.asm'
-%include 'stdio.mac'
+%include '320x200x16.asm'
 
 main:
 
@@ -17,23 +36,10 @@ mov [originalVideoMode], al  ; Store it into the byte pointed to by originalVide
 mov ax, 9h                   ; AH <- 0x00 (set video mode), AL <- 9 (new mode)
 int 10h                      ; Call INT10h fn 0 to change the video mode
 
-; Format originalVideoMode to a string and print it. Nothing new here!
-print str_orgVideoMode
-intToString [originalVideoMode]
-println buf16
-
-; Do the same thing with the new video mode (9).
-print str_newVideoMode
-intToString 9
-println buf16
-
-; Print 'Press any key to continue'
-println str_pressAnyKey
-
-mov ax, 0xb800
-mov es, ax
-xor si, si
-mov byte [es:si], 0aah
+setpixel 0, 0, 9
+setpixel 319, 0, 10
+setpixel 319, 199, 11
+setpixel 0, 199, 12
 
 ; Call INT21h fn 8 (character input without echo) to wait for a keypress
 waitForAnyKey
@@ -47,15 +53,3 @@ int 10h
 ; Exit the program
 mov ax, 4c00h
 int 21h
-
-section .data
-
-str_orgVideoMode: db 'Original video mode: $'
-str_newVideoMode: db 'New video mode: $'
-str_pressAnyKey: db 'Press any key to continue', 0dh, 0ah, '$'
-str_crlf: db 0dh, 0ah, '$'
-
-section .bss
-
-originalVideoMode: resb 1
-buf16: resb 16

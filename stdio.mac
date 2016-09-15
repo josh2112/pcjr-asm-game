@@ -2,9 +2,6 @@
 ;
 ; Expects the following initialized data:
 ; str_crlf: db 0dh, 0ah, '$'
-;
-; and the following uninitialized data:
-; buf16: resb 16
 
 ; Much like C/C++, these %ifndef/%define/%endif keep the file from being
 ; accidentally included multiple times
@@ -24,9 +21,9 @@
 	print str_crlf
 %endmacro
 
-%macro intToString 1
-  mov ax, %1
-  mov di, buf16
+%macro intToString 2
+  mov di, %1
+  mov ax, %2
   call int_to_string
 %endmacro
 
