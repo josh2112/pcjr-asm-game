@@ -7,6 +7,7 @@
 
 ; Converts the signed integer in AX to a string and puts it in [DI]
 ; Returns the result (the original DI pointer) in AX
+; Clobbers BX, CX, DX
 int_to_string:
   push di             ; Save the original DI pointer so we can pop it out
                       ; and return it as AX

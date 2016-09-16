@@ -36,10 +36,36 @@ mov [originalVideoMode], al  ; Store it into the byte pointed to by originalVide
 mov ax, 9h                   ; AH <- 0x00 (set video mode), AL <- 9 (new mode)
 int 10h                      ; Call INT10h fn 0 to change the video mode
 
-setpixel 0, 0, 9
-setpixel 319, 0, 10
-setpixel 319, 199, 11
-setpixel 0, 199, 12
+; mov cx, 200
+; fill_screen:
+;   mov ax, 200
+;   sub ax, cx
+;
+;   push cx
+;   mov cx, 320
+;   draw_scanline:
+;     mov bx, 320
+;     sub bx, cx
+;
+;     push ax
+;     push cx
+;     mov dx, 10
+;     call putpixel
+;     pop cx
+;     pop ax
+;
+;     loop draw_scanline
+;   pop cx
+;   loop fill_screen
+
+mov cx, 16
+rotateColors:
+  mov dl, 16
+  sub dl, cl
+  push cx
+  call cls
+  pop cx
+  loop rotateColors
 
 ; Call INT21h fn 8 (character input without echo) to wait for a keypress
 waitForAnyKey
