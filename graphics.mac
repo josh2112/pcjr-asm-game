@@ -3,7 +3,7 @@
 ; Clobbers ax, bx, dl.
 ; %1: X (row)
 ; %2: Y (column)
-; %3: color (1-byte pallete index)
+; %3: color (4-bit pallete index)
 %macro setpixel 3
   mov bx, %1
   mov ax, %2

@@ -47,7 +47,7 @@ putpixel:
     mov [es:si], al  ; Push the updated pixel pair back into memory
     ret
 
-; Fills the whole framebuffer with color index DL
+; Fills the framebuffer located at ES with color index DL
 cls:
   ; Copy the low nibble of DL to the high nibble
   and dl, 0x0f ; Clear the high nibble
@@ -55,14 +55,12 @@ cls:
   mov cl, 4
   shl dh, cl   ; Shift DH left 4 bits (make the low nibble the high nibble)
   or dl, dh    ; Combine the nibbles
+  mov dh, dl
 
-  mov ax, 0xb800  ; start of video memory
-  mov es, ax
-
-  mov al, dl
-  mov cx, 0x7f3f ; end of bank #4 (as offset from start of video memory)
+  mov ax, dx
+  mov cx, 0x8000 ; end of bank #4 (as offset from start of video memory)
   mov di, 0
-  rep stosb
+  rep stosw
 
   ret
 

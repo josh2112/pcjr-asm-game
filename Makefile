@@ -23,7 +23,7 @@ MACROS=stdio.mac
 SRCS=formatting.asm 320x200x16.asm
 DEPS=$(MACROS) $(SRCS)
 
-NASM_OPTS=-f bin
+NASM_OPTS=-f bin -l $(TARGET).lst
 DOSBOX_OPTS=-conf dosbox.conf
 
 $(TARGET.COM): $(TARGET).asm $(DEPS)
