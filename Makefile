@@ -20,7 +20,7 @@ TARGET=test
 TARGET.COM=$(TARGET).com
 
 MACROS=stdio.mac
-SRCS=formatting.asm
+SRCS=formatting.asm 320x200x16.asm
 DEPS=$(MACROS) $(SRCS)
 
 NASM_OPTS=-f bin
