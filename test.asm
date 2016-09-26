@@ -3,8 +3,7 @@
 [cpu 8086]
 [org 100h]
 
-%include 'stdio.mac'
-%include 'graphics.mac'
+%include 'std/stdio.mac'
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -35,17 +34,17 @@ mov ax, 9h                   ; AH <- 0x00 (set video mode), AL <- 9 (new mode)
 int 10h                      ; Call INT10h fn 0 to change the video mode
 
 game_loop:
-  mov dl, 1
+  mov dl, 1                  ; Paint the whole screen with color 1
   call cls
 
-  call draw_player
+  call draw_player           ; Draw the player graphic
 
-  xor ax, ax
+  xor ax, ax                 ; Call INT16h fn 0 to grab a key
   int 16h
-  call process_key
+  call process_key           ; Do something with the key
 
-  cmp byte [is_running], 0
-  jne game_loop
+  cmp byte [is_running], 0   ; If still running (ESC key not pressed),
+  jne game_loop              ; jump back to game_loop
 
 clean_up:
 
@@ -61,55 +60,7 @@ int 21h
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-%include 'formatting.asm'
-%include '320x200x16.asm'
-
-process_key:
-  cmp ah, 1
-  jne .testUp
-  mov byte [is_running], 0
-  jmp .done
-.testUp:
-  cmp ah, 0x48
-  jne .testDown
-  dec word [player_y]
-  jmp .done
-.testDown:
-  cmp ah, 0x50
-  jne .testLeft
-  inc word [player_y]
-  jmp .done
-.testLeft:
-  cmp ah, 0x4b
-  jne .testRight
-  dec word [player_x]
-  jmp .done
-.testRight:
-  cmp ah, 0x4d
-  jne .done
-  inc word [player_x]
-.done:
-  ret
-
-draw_player:
-  mov cx, 8
-  .drawRow:
-    mov ax, 8
-    sub ax, cx
-    add ax, [player_y]      ; AX = row (y)
-    push cx
-    mov cx, 8
-    .drawPixel:
-      mov bx, 8
-      sub bx, cx
-      add bx, [player_x]    ; BX = col (x)
-      push ax
-      push cx
-      mov dl, 10
-      call putpixel         ; (BX, AX) = (x,y), DL = color
-      pop cx
-      pop ax
-      loop .drawPixel
-    pop cx
-    loop .drawRow
-  ret
+%include 'std/stdlib.asm'
+%include 'std/320x200x16.asm'
+%include 'input.asm'
+%include 'renderer.asm'

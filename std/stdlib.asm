@@ -1,9 +1,10 @@
-; formatting.asm: Datatype conversion routines for 8088 assembly
+; stdlib.asm: Routines for 8088 assembly that would be classified as "stdlib"
+; in C, such as data conversion, memory allocation, etc.
 
 ; Much like C/C++, these %ifndef/%define/%endif keep the file from being
 ; accidentally included multiple times
-%ifndef FORMATTING_ASM
-%define FORMATTING_ASM
+%ifndef STDLIB_ASM
+%define STDLIB_ASM
 
 ; Converts the signed integer in AX to a string and puts it in [DI]
 ; Returns the result (the original DI pointer) in AX
@@ -34,4 +35,22 @@ int_to_string:
   pop ax              ; Pop the original DI into AX
   ret
 
-%endif ; FORMATTING_ASM
+; Uses INT21h fn 48h to allocate a block of size BX bytes. If it succeeds, the
+; new block's segment will be returned in AX. If it fails, the error message
+; pointed to by DX is printed and the program exits.
+allocate_buffer:
+  ; Make BX into a paragrah count by dividing by 16
+  mov cl, 4
+  shr bx, cl
+  mov ah, 0x48
+  int 21h
+  jc .allocationFailed
+  ret
+; If carry bit is set the allocation failed - print message and exit
+.allocationFailed:
+  mov	ah, 9
+  int	21h
+  mov ax, 4c00h
+  int 21h
+
+%endif ; STDLIB_ASM
