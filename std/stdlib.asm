@@ -35,22 +35,4 @@ int_to_string:
   pop ax              ; Pop the original DI into AX
   ret
 
-; Uses INT21h fn 48h to allocate a block of size BX bytes. If it succeeds, the
-; new block's segment will be returned in AX. If it fails, the error message
-; pointed to by DX is printed and the program exits.
-allocate_buffer:
-  ; Make BX into a paragrah count by dividing by 16
-  mov cl, 4
-  shr bx, cl
-  mov ah, 0x48
-  int 21h
-  jc .allocationFailed
-  ret
-; If carry bit is set the allocation failed - print message and exit
-.allocationFailed:
-  mov	ah, 9
-  int	21h
-  mov ax, 4c00h
-  int 21h
-
 %endif ; STDLIB_ASM
