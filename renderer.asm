@@ -3,9 +3,10 @@
 %ifndef RENDERER_ASM
 %define RENDERER_ASM
 
-; Draws the player graphic (an 8x8 green square) at location (player_x, player_y).
-; Uses the putpixel routine from std/320x200x16.asm.
-draw_player:
+; Draws an 8x8 rectangle at location (player_x, player_y) in
+; color [color_draw_rect]. Uses the putpixel routine from
+; std/320x200x16.asm.
+draw_rect:
   mov cx, 8
   .drawRow:
     mov ax, 8
@@ -19,7 +20,7 @@ draw_player:
       add bx, [player_x]    ; BX = col (x)
       push ax
       push cx
-      mov dl, 10
+      mov dl, [color_draw_rect]
       call putpixel         ; (BX, AX) = (x,y), DL = color
       pop cx
       pop ax
