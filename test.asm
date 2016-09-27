@@ -51,7 +51,15 @@ mov dl, [color_bg]           ; Paint the whole screen with the background color
 call cls
 
 game_loop:
-  mov dl, [color_bg]
+  mov   dx, 0x3da
+  mov   ah, 0x8
+  mov   cx, 0x1fff
+waitForRetrace:
+  in    al, dx
+  and   al, ah
+  ;loopz waitForRetrace
+
+  mov dx, [color_bg]
   mov [color_draw_rect], dl
   call draw_rect             ; Erase at the player's previous position
 
