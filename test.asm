@@ -3,6 +3,12 @@
 [cpu 8086]
 [org 100h]
 
+%define key_esc 0x01
+%define key_up 0x48
+%define key_left 0x4b
+%define key_right 0x4d
+%define key_down 0x50
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 section .data
@@ -16,6 +22,8 @@ color_draw_rect: db 0
 is_running: db 1
 player_x: dw 160
 player_y: dw 100
+
+keyboardState: times 128 db 0
 
 section .bss
 
@@ -43,18 +51,15 @@ mov dl, [color_bg]           ; Paint the whole screen with the background color
 call cls
 
 game_loop:
-  mov dl, [color_player]
-  mov [color_draw_rect], dl
-  call draw_rect             ; Draw the player graphic
-
-  xor ax, ax                 ; Call INT16h fn 0 to grab a key
-  int 16h
-  push ax
   mov dl, [color_bg]
   mov [color_draw_rect], dl
   call draw_rect             ; Erase at the player's previous position
-  pop ax
+
   call process_key           ; Do something with the key
+
+  mov dl, [color_player]
+  mov [color_draw_rect], dl
+  call draw_rect             ; Draw the player graphic
 
   cmp byte [is_running], 0   ; If still running (ESC key not pressed),
   jne game_loop              ; jump back to game_loop
