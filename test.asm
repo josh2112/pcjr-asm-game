@@ -51,14 +51,6 @@ mov dl, [color_bg]           ; Paint the whole screen with the background color
 call cls
 
 game_loop:
-  mov   dx, 0x3da
-  mov   ah, 0x8
-  mov   cx, 0x1fff
-waitForRetrace:
-  in    al, dx
-  and   al, ah
-  ;loopz waitForRetrace
-
   mov dx, [color_bg]
   mov [color_draw_rect], dl
   call draw_rect             ; Erase at the player's previous position
@@ -68,6 +60,8 @@ waitForRetrace:
   mov dl, [color_player]
   mov [color_draw_rect], dl
   call draw_rect             ; Draw the player graphic
+
+  call waitForRetrace
 
   cmp byte [is_running], 0   ; If still running (ESC key not pressed),
   jne game_loop              ; jump back to game_loop
@@ -93,3 +87,16 @@ int 21h
 %include 'std/320x200x16.asm'
 %include 'input.asm'
 %include 'renderer.asm'
+
+waitForRetrace:
+  mov   dx, 0x3da
+  mov   ah, 0x8
+.loop:  ; Wait for the vertical retrace bit to go low
+  in    al, dx
+  and   al, ah
+  jnz .loop
+.loop2: ; Now wait for it to go high
+  in    al, dx
+  and   al, ah
+  jz .loop2
+  ret
