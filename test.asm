@@ -9,6 +9,14 @@
 %define key_right 0x4d
 %define key_down 0x50
 
+%macro setIndicator 1
+  mov ax, 0xb800
+  mov es, ax
+  mov al, %1
+  xor di, di
+  stosb
+%endmacro
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 section .data
@@ -53,11 +61,7 @@ call cls
 game_loop:
   call waitForRetrace
 
-  mov ax, 0xb800
-  mov es, ax
-  mov al, 0x44
-  xor di, di
-  stosb
+  setIndicator 0x44
 
   mov dx, [color_bg]
   mov [color_draw_rect], dl
@@ -69,11 +73,7 @@ game_loop:
   mov [color_draw_rect], dl
   call draw_rect             ; Draw the player graphic
 
-  mov ax, 0xb800
-  mov es, ax
-  mov al, 0xee
-  xor di, di
-  stosb
+  setIndicator 0xee
 
   cmp byte [is_running], 0   ; If still running (ESC key not pressed),
   jne game_loop              ; jump back to game_loop
