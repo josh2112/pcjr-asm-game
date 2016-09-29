@@ -1,0 +1,32 @@
+
+gfx_player: db 0x3c, 0x3c, 0x18, 0xff, 0x18, 0x24, 0x24, 0xc3
+
+draw_player:
+  mov cx, 8
+  .drawRow:
+    mov ax, 8
+    sub ax, cx
+    mov di, ax
+    add ax, [pos_player_y]            ; AX = row (y)
+    mov byte dl, [gfx_player+di]   ; DL is now one row of player data
+    push cx
+    mov cx, 8
+    .drawPixel:
+      mov bx, 8
+      sub bx, cx
+      add bx, [pos_player_x]        ; BX = col (x)
+      shl dl, 1                 ; pop the leftmost bit into the carry flag
+      jnc .skip                 ; if carry flag is 0, skip over pixel-painting
+      push ax
+      push cx
+      push dx
+      mov dl, 10
+      call putpixel             ; (BX, AX) = (x,y), DL = color
+      pop dx
+      pop cx
+      pop ax
+    .skip:
+      loop .drawPixel
+    pop cx
+    loop .drawRow
+  ret
