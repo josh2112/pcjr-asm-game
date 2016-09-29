@@ -32,16 +32,15 @@ draw_rect:
 ; Wait for port 0x3da bit 3 to go high, meaning that we are in
 ; the vertical retrace period and can safely update the framebuffer.
 waitForRetrace:
-  mov   dx, 0x3da
-  mov   ah, 0x8
-.loop:  ; Wait for the vertical retrace bit to go low
-  in    al, 0x3da
-  and   al, 0x8
+  mov dx, 0x3da
+.loop:         ; Wait for the vertical retrace bit to go low
+  in al, dx
+  and al, 0x8
   jnz .loop
 .loop2:
-  in    al, 0x3da  ; Now wait for it to go high. This way
-  and   al, 0x8    ; we know we've caught vertical retrace
-  jz .loop2        ; right at the beginning.
+  in al, dx    ; Now wait for it to go high. This way
+  and al, 0x8  ; we know we've caught vertical retrace
+  jz .loop2    ; right at the beginning.
   ret
 
 %endif ; RENDERER_ASM
