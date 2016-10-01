@@ -7,27 +7,27 @@
 ; - Cursor keys (up, down, left, right): Adjust player position.
 ; - Esc key: set is_running to false (game will be exited)
 process_key:
-  cmp byte [keyboardState+key_esc], 1
+  cmp byte [keyboardState+KEY_ESC], 1
   jne .testUp
   mov byte [is_running], 0
   jmp .done
 .testUp:
-  cmp byte [keyboardState+key_up], 1
+  cmp byte [keyboardState+KEY_UP], 1
   jne .testDown
   dec word [player_y]
   jmp .done
 .testDown:
-  cmp byte [keyboardState+key_down], 1
+  cmp byte [keyboardState+KEY_DOWN], 1
   jne .testLeft
   inc word [player_y]
   jmp .done
 .testLeft:
-  cmp byte [keyboardState+key_left], 1
+  cmp byte [keyboardState+KEY_LEFT], 1
   jne .testRight
   dec word [player_x]
   jmp .done
 .testRight:
-  cmp byte [keyboardState+key_right], 1
+  cmp byte [keyboardState+KEY_RIGHT], 1
   jne .done
   inc word [player_x]
 .done:
@@ -42,19 +42,18 @@ handle_int9h:
 
   xor ax, ax
   in al, 60h          ; Read from keyboard
-
-  test al, 0x80       ; If high bit is set it's a key release
+  xchg bx, ax
+  test bl, 0x80       ; If high bit is set it's a key release
   jnz .keyReleased
 
+; NOTE: Using CS: prefix for keyboard state here because no telling what
+; DS will be set to when this is called!
 .keyPressed:
-  mov bx, ax
-  mov byte [keyboardState+bx], 1  ; Turn on that key in the buffer
+  mov byte [cs:keyboardState+bx], 1  ; Turn on that key in the buffer
   jmp .done
 .keyReleased:
-  and al, 0x7f                      ; Remove key-released flag
-  mov bx, ax
-  mov byte [keyboardState+bx], 0  ; Turn off that key in the buffer
-  jmp .done
+  and bl, 0x7f                    ; Remove key-released flag
+  mov byte [cs:keyboardState+bx], 0  ; Turn off that key in the buffer
 .done:
   ; Clear keyboard IRQ if pending
   in al, 61h     ; Grab keyboard state
@@ -77,6 +76,7 @@ handle_int9h:
 ; Redirect INT9h to the handle_int9h procedure.
 install_keyboard_handler:
   cli                               ; Disable interrupts
+  push es
   xor ax, ax
   mov es, ax                        ; Set ES to 0
   mov dx, [es:9h*4]                 ; Copy the offset of the INT 9h handler
@@ -85,6 +85,7 @@ install_keyboard_handler:
   mov [oldInt9h+2], dx              ; Store it in oldInt9h + 2
   mov word [es:9h*4], handle_int9h  ; Install the new handle - first the offset,
   mov word [es:9h*4+2], cs          ; Then the segment
+  pop es
   sti                               ; Reenable interrupts
   ret
 
@@ -92,12 +93,14 @@ install_keyboard_handler:
 ; Restore default INT9h processing.
 restore_keyboard_handler:
   cli
+  push es
   xor ax, ax
   mov es, ax
   mov dx, [oldInt9h]
   mov word [es:9h*4], dx
   mov dx, [oldInt9h+2]
   mov word [es:9h*4+2], dx
+  pop es
   sti
   ret
 
