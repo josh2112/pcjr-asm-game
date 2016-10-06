@@ -60,7 +60,7 @@ cls:
   xor di, di     ; Set DI to 0 (STOSW will copy to ES:DI)
   mov ax, dx
   mov cx, 0x4000 ; Fill 32KB (0x4000 16-bit words)
-  rep stosw      ;
+  rep stosw
 
   ret
 

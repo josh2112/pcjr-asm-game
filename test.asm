@@ -8,8 +8,6 @@
 %include 'std/stdio.mac'
 
 %macro setIndicator 1
-  mov di, VIDEO_SEG
-  mov es, di
   xor di, di
   mov al, %1
   stosb
@@ -20,27 +18,43 @@
 section .data
 
 str_crlf: db 0xa, 0xd, '$'
-err_notEnoughMemory: db 'Error: Not enough free memory to play this dazzling game!$'
 
-color_bg: db 1
-color_player: db 10
-color_draw_rect: db 0
+color_bg: db 0x1
+color_player: db 0xa
 
 is_running: db 1
-player_x: dw 160
+
+player_x: dw 1
 player_y: dw 100
+
+player_x_prev: dw 160
+player_y_prev: dw 100
 
 keyboardState: times 128 db 0
 
-bg_pattern1: dw 0x1111
-bg_pattern2: dw 0x1911
-bg_pattern3: dw 0x1911
-bg_pattern4: dw 0x1999
+draw_rect_xy_ptr: dw 0
+draw_rect_w: dw 8
+draw_rect_h: dw 8
 
-rect_bitblt_x: dw 0
-rect_bitblt_y: dw 0
-rect_bitblt_w: dw 320
-rect_bitblt_h: dw 200
+icon_player: db \
+  0x0f, 0xaa, 0xf0, 0x00, \
+  0x0a, 0xaa, 0xa0, 0x00, \
+  0x00, 0xaa, 0x00, 0x00, \
+  0x2a, 0xaa, 0xa2, 0x00, \
+  0x00, 0xaa, 0x00, 0x00, \
+  0x0a, 0xaa, 0xa0, 0x00, \
+  0x0a, 0x00, 0xa0, 0x00, \
+  0x22, 0x00, 0x22, 0x00
+
+icon_player_odd: db \
+  0x00, 0xfa, 0xaf, 0x00, \
+  0x00, 0xaa, 0xaa, 0x00, \
+  0x00, 0x0a, 0xa0, 0x00, \
+  0x02, 0xaa, 0xaa, 0x20, \
+  0x00, 0x0a, 0xa0, 0x00, \
+  0x00, 0xaa, 0xaa, 0x00, \
+  0x00, 0xa0, 0x0a, 0x00, \
+  0x02, 0x20, 0x02, 0x20
 
 section .bss
 
@@ -49,24 +63,9 @@ buf16: resb 16
 
 oldInt9h: resb 4
 
-offscreenSeg: resw 1
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 section .text
-
-; Try to allocate enough memory for the background buffer
-; 320x200 = 64k pixels / 2 pixels per byte = 32KB (0x8000 bytes)
-mov bx, 0x800  ; 0x8000 bytes in paragraphs
-mov ah, 0x48
-int 21h            ; Call INT21H fn 0x48
-jnc memOK
-  ; If carry bit is set the allocation failed - print message and exit
-  println err_notEnoughMemory
-  mov ax, 0x4c00
-  int 21h
-memOK:
-mov [offscreenSeg], ax
 
 ; Get the initial video mode and save it to [originalVideoMode]
 mov ax, 0f00h                ; AH = 0x0f (get video mode)
@@ -79,43 +78,50 @@ int 10h                      ; Call INT10h fn 0 to change the video mode
 
 call install_keyboard_handler
 
-;call create_background
-mov di, [offscreenSeg]
+mov di, VIDEO_SEG   ; ES to destination (framebuffer)
+push es
 mov es, di
+
 mov dl, [color_bg]   ; Fill the background buffer
 call cls
 
-call blt_rect        ; Copy the whole background buffer to the screen
-
-mov word [rect_bitblt_w], 8
-mov word [rect_bitblt_h], 8
-
 game_loop:
 
-  mov ax, [player_x]
-  mov [rect_bitblt_x], ax
-  mov ax, [player_y]
-  mov [rect_bitblt_y], ax
+  ; Copy player_[x,y] to player_[x,y]_prev
+  push es
+  mov di, ds
+  mov es, di
+  mov si, player_x
+  mov di, player_x_prev
+  mov cx, 2
+  rep movsw
+  pop es
 
   call process_key           ; Do something with the key
 
-  cmp byte [is_running], 0   ; If still running (ESC key not pressed),
-  je clean_up                ; jump back to game_loop
+  cmp byte [is_running], 0   ; If not running (ESC key pressed),
+  je clean_up                ; jump out of game loop
 
   call waitForRetrace
 
   setIndicator 0x44
 
-  call blt_rect             ; Erase to background at the player's previous position
-  call blt_rect             ; Erase to background at the player's previous position
-  call blt_rect             ; Erase to background at the player's previous position
-  call blt_rect             ; Erase to background at the player's previous position
+  ;mov di, player_x_prev
+  ;mov [draw_rect_xy_ptr], di
+  ;mov dl, [color_bg]
+  ;call draw_rect             ; Erase to BG color at player's previous position
 
+  ;mov di, player_x
+  ;mov [draw_rect_xy_ptr], di
   ;mov dl, [color_player]
-  ;mov [color_draw_rect], dl
-  ;call draw_rect             ; Draw the player graphic
+  ;call draw_rect             ; Draw the player rectangle
 
-  setIndicator 0xee
+  mov di, player_x
+  mov [draw_rect_xy_ptr], di
+  mov si, icon_player
+  call draw_icon               ; Draw the player icon
+
+  setIndicator 0xaa
 
   jmp game_loop
 
@@ -141,52 +147,93 @@ int 21h
 %include 'input.asm'
 %include 'renderer.asm'
 
-create_background:
-  mov di, [offscreenSeg]
-  mov es, di
-  mov cx, 200
-.paintRow:
-  mov bx, cx
-  sub bx, 200
+; Copies the 8x8 icon pointed to by SI to the X, Y location referenced
+; by [draw_rect_xy_ptr].
+draw_icon:
+  mov cx, 8  ; Icon height
+.copyLine:
+  mov ax, 8
+  sub ax, cx  ; Now AX is the icon line number
   push cx
-  mov cx, 160
-  rep stosw
-  ret
 
-; Copies the rectangle specified by rect_bitblt from the
-; offscreen buffer to the framebuffer.
-blt_rect:
-  push bp
-  mov bp, sp  ; Locals:
-  sub sp, 2   ;  - width of each line copy (in bytes): 2 bytes at [bp-2]
+  mov di, [draw_rect_xy_ptr] ; dereference Y location
+  add ax, [di+2] ; Now AX is the framebuffer row number
 
-  push ds         ; Set DS to source (offscreen buffer) and
-  push es         ; ES to destination (framebuffer)
-  mov si, [offscreenSeg]
-  mov ds, si
-  mov di, VIDEO_SEG
-  mov es, di
+  ; Set DI to start byte of left side of line
 
-  ; Calculate number of extra bytes to add to stosb count
-  ; due to X position or width being odd
-  mov ax, [cs:rect_bitblt_x]
-  and ax, 0x1
-  mov bx, [cs:rect_bitblt_w]
-  and bx, 0x1
+  mov bx, ax      ; Faster alternative to dividing AX by 4: shift
+  shr ax, 1       ; right twice for quotient, mask with 0b11 for
+  shr ax, 1       ; remainder. Now AX is the row within the bank
+
+  and bx, 0b11    ; BX = bank number (0-3)
+  mov cl, 13      ; Faster alternative to multiplying BX by the
+  shl bx, cl      ; bank width (0x2000): shift left by 13.
+  ; Now BX is bank offset
+
+  ; Calc byte index of pixel: BX += (AX * 320 + rect_bitblt.x) / 2
+  push bx
+  mov bx, 320
+  push dx
+  mul bx
+  pop dx
+  add ax, [di]   ; add X
+  shr ax, 1      ; Because each byte encodes 2 pixels
+  pop bx
   add ax, bx
 
-  mov bx, [cs:rect_bitblt_w] ; Width of each line to copy
-  shr bx, 1                  ; Because each byte encodes 2 pixels
-  add bx, ax                 ; Add any extra bytes
-  mov [bp-2], bx             ; Store as local variable
+  mov di, ax
 
-  mov cx, [cs:rect_bitblt_h] ; Number of lines to copy
+  mov cx, 4
+.copyByte:
+  lodsb            ; AL is a byte from the icon
+  mov ah, [es:di]  ; AH is a byte from the framebuffer
+
+  ;xchg al, ah
+
+  stosb
+  loop .copyByte
+
+  pop cx
+  loop .copyLine
+
+.done:
+  ret
+
+; Draws a rectangle of color DL to the X,Y location referenced by
+; [draw_rect_xy_ptr] with a size of [draw_rect_w], [draw_rect_h].
+; NOTE: [draw_rect_w] must be even!
+draw_rect:
+  push bp     ; Locals:
+  mov bp, sp  ; [bp-1]: flags: 0x1 = only fill inner pixels of first and last bytes
+  sub sp, 3   ; [bp-3]: number of whole bytes to copy on each line
+
+  mov dh, dl
+  mov cl, 4
+  shl dh, cl
+  or dl, dh   ; Now DL contains color twice
+
+  mov si, [draw_rect_xy_ptr]  ; address of X, Y
+  mov ax, [si]                ; dereference again to get X
+  and al, 0x1
+  mov [bp-1], al
+
+  mov bx, [draw_rect_w]
+  shr bx, 1
+  cmp ax, 0x1
+  jne .afterSub1
+  dec bx
+.afterSub1:
+  mov [bp-3], bx      ; # full bytes on each line
+
+  mov cx, [draw_rect_h] ; Number of lines to copy
 
 .copyLine:
-  mov ax, [cs:rect_bitblt_h]
+  mov ax, [draw_rect_h]
   sub ax, cx
-  add ax, [cs:rect_bitblt_y]  ; Now AX is vertical line number
   push cx
+
+  mov di, [draw_rect_xy_ptr] ; dereference Y location
+  add ax, [di+2]
 
   ; Set SI and DI to start byte of left side of line
   mov si, ax      ; Faster alternative to dividing AX by 4: shift
@@ -197,25 +244,45 @@ blt_rect:
   mov cl, 13      ; Faster alternative to multiplying SI by the
   shl si, cl      ; bank width (0x2000): shift left by 13.
 
-
   ; Calc byte index of pixel: SI += (AX * 320 + rect_bitblt.x) / 2
   mov bx, 320
+  push dx
   mul bx
-  add ax, [cs:rect_bitblt_x]
-  shr ax, 1   ; Because each byte encodes 2 pixels
+  pop dx
+  add ax, [di]   ; add X
+  shr ax, 1      ; Because each byte encodes 2 pixels
   add si, ax
 
   mov di, si
 
-  mov cx, [bp-2]
-  rep movsb                  ; Copy CX bytes
+  test byte [bp-1], 0x1
+  jz .afterFirstByte
+  mov al, [es:di]  ; load the pixel pair
+  and al, 0xf0     ; mask out the bottom pixel (keeping the top)
+  mov dh, dl
+  and dh, 0x0f     ; mask out the top pixel
+  or al, dh
+  stosb
+.afterFirstByte:
+
+  mov cx, [bp-3]
+  mov al, dl
+  rep stosb         ; Copy CX bytes
+
+  test byte [bp-1], 0x1
+  jz .afterLastByte
+  mov al, [es:di]  ; load the pixel pair
+  and al, 0x0f     ; mask out the top pixel (keeping the bottom)
+  mov dh, dl
+  and dh, 0xf0     ; mask out the bottom pixel
+  or al, dh
+  stosb
+.afterLastByte:
 
   pop cx
   loop .copyLine
 
 .done:
-  pop es
-  pop ds          ; Restore our segment registers
   mov sp, bp      ; Destroy locals
   pop bp
 

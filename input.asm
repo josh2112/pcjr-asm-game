@@ -10,22 +10,22 @@ process_key:
   cmp byte [keyboardState+KEY_ESC], 1
   jne .testUp
   mov byte [is_running], 0
-  jmp .done
+  ret
 .testUp:
   cmp byte [keyboardState+KEY_UP], 1
   jne .testDown
   dec word [player_y]
-  jmp .done
+  ret
 .testDown:
   cmp byte [keyboardState+KEY_DOWN], 1
   jne .testLeft
   inc word [player_y]
-  jmp .done
+  ret
 .testLeft:
   cmp byte [keyboardState+KEY_LEFT], 1
   jne .testRight
   dec word [player_x]
-  jmp .done
+  ret
 .testRight:
   cmp byte [keyboardState+KEY_RIGHT], 1
   jne .done
@@ -77,8 +77,8 @@ handle_int9h:
 install_keyboard_handler:
   cli                               ; Disable interrupts
   push es
-  xor ax, ax
-  mov es, ax                        ; Set ES to 0
+  xor di, di
+  mov es, di                        ; Set ES to 0
   mov dx, [es:9h*4]                 ; Copy the offset of the INT 9h handler
   mov [oldInt9h], dx                ; Store it in oldInt9h
   mov dx, [es:9h*4+2]               ; Then copy the segment
@@ -94,8 +94,8 @@ install_keyboard_handler:
 restore_keyboard_handler:
   cli
   push es
-  xor ax, ax
-  mov es, ax
+  xor di, di
+  mov es, di
   mov dx, [oldInt9h]
   mov word [es:9h*4], dx
   mov dx, [oldInt9h+2]
