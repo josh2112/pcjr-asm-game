@@ -33,28 +33,26 @@ player_y_prev: dw 100
 keyboardState: times 128 db 0
 
 draw_rect_xy_ptr: dw 0
-draw_rect_w: dw 8
-draw_rect_h: dw 8
+draw_rect_w: dw 14
+draw_rect_h: dw 16
 
 icon_player: db \
-  0x0f, 0xaa, 0xf0, 0x00, \
-  0x0a, 0xaa, 0xa0, 0x00, \
-  0x00, 0xaa, 0x00, 0x00, \
-  0x2a, 0xaa, 0xa2, 0x00, \
-  0x00, 0xaa, 0x00, 0x00, \
-  0x0a, 0xaa, 0xa0, 0x00, \
-  0x0a, 0x00, 0xa0, 0x00, \
-  0x22, 0x00, 0x22, 0x00
-
-icon_player_odd: db \
-  0x00, 0xfa, 0xaf, 0x00, \
-  0x00, 0xaa, 0xaa, 0x00, \
-  0x00, 0x0a, 0xa0, 0x00, \
-  0x02, 0xaa, 0xaa, 0x20, \
-  0x00, 0x0a, 0xa0, 0x00, \
-  0x00, 0xaa, 0xaa, 0x00, \
-  0x00, 0xa0, 0x0a, 0x00, \
-  0x02, 0x20, 0x02, 0x20
+  000h, 000h, 0eeh, 0eeh, 0eeh, 000h, 000h, \
+  000h, 000h, 088h, 0eeh, 088h, 000h, 000h, \
+  000h, 000h, 0eeh, 0eeh, 0eeh, 000h, 000h, \
+  000h, 000h, 0eeh, 088h, 0eeh, 000h, 000h, \
+  000h, 000h, 0eeh, 0eeh, 0eeh, 000h, 000h, \
+  000h, 000h, 000h, 0eeh, 000h, 000h, 000h, \
+  0eeh, 0aah, 0aah, 0aah, 0aah, 0aah, 0eeh, \
+  0eeh, 0aah, 0aah, 0aah, 0aah, 0aah, 0eeh, \
+  000h, 000h, 0aah, 0aah, 0aah, 000h, 000h, \
+  000h, 000h, 0aah, 0aah, 0aah, 000h, 000h, \
+  000h, 000h, 022h, 022h, 022h, 000h, 000h, \
+  000h, 000h, 033h, 033h, 033h, 000h, 000h, \
+  000h, 000h, 033h, 000h, 033h, 000h, 000h, \
+  000h, 000h, 033h, 000h, 033h, 000h, 000h, \
+  000h, 000h, 033h, 000h, 033h, 000h, 000h, \
+  000h, 066h, 066h, 000h, 066h, 066h, 000h \
 
 section .bss
 
@@ -106,10 +104,10 @@ game_loop:
 
   setIndicator 0x44
 
-  ;mov di, player_x_prev
-  ;mov [draw_rect_xy_ptr], di
-  ;mov dl, [color_bg]
-  ;call draw_rect             ; Erase to BG color at player's previous position
+  mov di, player_x_prev
+  mov [draw_rect_xy_ptr], di
+  mov dl, [color_bg]
+  call draw_rect             ; Erase to BG color at player's previous position
 
   ;mov di, player_x
   ;mov [draw_rect_xy_ptr], di
@@ -147,12 +145,14 @@ int 21h
 %include 'input.asm'
 %include 'renderer.asm'
 
-; Copies the 8x8 icon pointed to by SI to the X, Y location referenced
-; by [draw_rect_xy_ptr].
+; Copies the icon pointed to by SI to the X,Y location referenced
+; by [draw_rect_xy_ptr] with a size of [draw_rect_w], [draw_rect_h].
+; NOTE: X and width must be even!
 draw_icon:
-  mov cx, 8  ; Icon height
+  mov cx, [draw_rect_h]
+
 .copyLine:
-  mov ax, 8
+  mov ax, [draw_rect_h]
   sub ax, cx  ; Now AX is the icon line number
   push cx
 
@@ -160,7 +160,6 @@ draw_icon:
   add ax, [di+2] ; Now AX is the framebuffer row number
 
   ; Set DI to start byte of left side of line
-
   mov bx, ax      ; Faster alternative to dividing AX by 4: shift
   shr ax, 1       ; right twice for quotient, mask with 0b11 for
   shr ax, 1       ; remainder. Now AX is the row within the bank
@@ -183,47 +182,32 @@ draw_icon:
 
   mov di, ax
 
-  mov cx, 4
+  mov cx, [draw_rect_w]
+  shr cx, 1      ; Because each byte encodes 2 pixels
+
 .copyByte:
-  lodsb            ; AL is a byte from the icon
-  mov ah, [es:di]  ; AH is a byte from the framebuffer
-
-  ;xchg al, ah
-
-  stosb
+  mov al, [si]
+  test al, al
+  jz .afterCopyByte
+  mov [es:di], al
+.afterCopyByte:
+  inc si
+  inc di
   loop .copyByte
 
   pop cx
   loop .copyLine
 
-.done:
   ret
 
 ; Draws a rectangle of color DL to the X,Y location referenced by
 ; [draw_rect_xy_ptr] with a size of [draw_rect_w], [draw_rect_h].
-; NOTE: [draw_rect_w] must be even!
+; NOTE: X and width must be even!
 draw_rect:
-  push bp     ; Locals:
-  mov bp, sp  ; [bp-1]: flags: 0x1 = only fill inner pixels of first and last bytes
-  sub sp, 3   ; [bp-3]: number of whole bytes to copy on each line
-
   mov dh, dl
   mov cl, 4
   shl dh, cl
   or dl, dh   ; Now DL contains color twice
-
-  mov si, [draw_rect_xy_ptr]  ; address of X, Y
-  mov ax, [si]                ; dereference again to get X
-  and al, 0x1
-  mov [bp-1], al
-
-  mov bx, [draw_rect_w]
-  shr bx, 1
-  cmp ax, 0x1
-  jne .afterSub1
-  dec bx
-.afterSub1:
-  mov [bp-3], bx      ; # full bytes on each line
 
   mov cx, [draw_rect_h] ; Number of lines to copy
 
@@ -255,35 +239,12 @@ draw_rect:
 
   mov di, si
 
-  test byte [bp-1], 0x1
-  jz .afterFirstByte
-  mov al, [es:di]  ; load the pixel pair
-  and al, 0xf0     ; mask out the bottom pixel (keeping the top)
-  mov dh, dl
-  and dh, 0x0f     ; mask out the top pixel
-  or al, dh
-  stosb
-.afterFirstByte:
-
-  mov cx, [bp-3]
+  mov cx, [draw_rect_w]
+  shr cx, 1
   mov al, dl
   rep stosb         ; Copy CX bytes
 
-  test byte [bp-1], 0x1
-  jz .afterLastByte
-  mov al, [es:di]  ; load the pixel pair
-  and al, 0x0f     ; mask out the top pixel (keeping the bottom)
-  mov dh, dl
-  and dh, 0xf0     ; mask out the bottom pixel
-  or al, dh
-  stosb
-.afterLastByte:
-
   pop cx
   loop .copyLine
-
-.done:
-  mov sp, bp      ; Destroy locals
-  pop bp
 
   ret
