@@ -3,6 +3,81 @@
 %ifndef _320X200X16_ASM
 %define _320X200X16_ASM
 
+
+; Draws a rectangle of color DL to the X,Y location referenced by
+; [draw_rect_xy_ptr] with a size of [draw_rect_w], [draw_rect_h].
+; NOTE: X and width must be even and height must be a multiple of 4!
+draw_rect_optimized:
+  push bp     ; Locals:
+  mov bp, sp  ; [bp-2] - offset between end of line and start of
+  sub sp, 2   ; next line, 2 bytes
+
+  mov ax, 320
+  sub ax, [draw_rect_w]
+  shr ax, 1
+  mov [bp-2], ax
+
+  mov dh, dl
+  mov cl, 4
+  shl dh, cl
+  or dl, dh   ; Now DL contains color twice
+
+  mov cx, 4   ; Number of banks
+
+.copyBank:
+  mov ax, 4
+  sub ax, cx  ; Now AX is the bank index (0,1,2,3)
+  push cx
+
+  mov di, [draw_rect_xy_ptr] ; dereference Y location
+  add ax, [di+2] ; Now AX is the framebuffer row number
+
+  ; Set DI to start byte of left side of line
+  mov bx, ax      ; Faster alternative to dividing AX by 4: shift
+  shr ax, 1       ; right twice for quotient, mask with 0b11 for
+  shr ax, 1       ; remainder. Now AX is the row within the bank
+
+  and bx, 0b11    ; BX = bank number (0-3)
+  mov cl, 13      ; Faster alternative to multiplying BX by the
+  shl bx, cl      ; bank width (0x2000): shift left by 13.
+  ; Now BX is bank offset
+
+  push bx
+  mov bx, 320
+  push dx
+  mul bx
+  pop dx
+  add ax, [di]   ; add X
+  shr ax, 1      ; Because each byte encodes 2 pixels
+  pop bx
+  add ax, bx
+
+  mov di, ax
+
+  mov cx, [draw_rect_h]
+  shr cx, 1
+  shr cx, 1
+.copyLine:
+  push cx
+
+  mov cx, [draw_rect_w]
+  shr cx, 1      ; Because each byte encodes 2 pixels
+
+  mov al, dl
+  rep stosb         ; Copy CX bytes
+
+  pop cx
+  add di, [bp-2]
+  loop .copyLine
+
+  pop cx
+  loop .copyBank
+
+  mov sp, bp
+  pop bp
+  ret
+
+
 ; Puts color index DL in the pair of pixels specified by BX,AX (x,y)
 ; Clobbers AX, CX, DX
 putpixel:

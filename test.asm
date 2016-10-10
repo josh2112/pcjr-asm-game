@@ -36,23 +36,26 @@ draw_rect_xy_ptr: dw 0
 draw_rect_w: dw 14
 draw_rect_h: dw 16
 
-icon_player: db \
-  000h, 000h, 0eeh, 0eeh, 0eeh, 000h, 000h, \
-  000h, 000h, 088h, 0eeh, 088h, 000h, 000h, \
-  000h, 000h, 0eeh, 0eeh, 0eeh, 000h, 000h, \
-  000h, 000h, 0eeh, 088h, 0eeh, 000h, 000h, \
-  000h, 000h, 0eeh, 0eeh, 0eeh, 000h, 000h, \
-  000h, 000h, 000h, 0eeh, 000h, 000h, 000h, \
-  0eeh, 0aah, 0aah, 0aah, 0aah, 0aah, 0eeh, \
-  0eeh, 0aah, 0aah, 0aah, 0aah, 0aah, 0eeh, \
-  000h, 000h, 0aah, 0aah, 0aah, 000h, 000h, \
-  000h, 000h, 0aah, 0aah, 0aah, 000h, 000h, \
-  000h, 000h, 022h, 022h, 022h, 000h, 000h, \
-  000h, 000h, 033h, 033h, 033h, 000h, 000h, \
-  000h, 000h, 033h, 000h, 033h, 000h, 000h, \
-  000h, 000h, 033h, 000h, 033h, 000h, 000h, \
-  000h, 000h, 033h, 000h, 033h, 000h, 000h, \
-  000h, 066h, 066h, 000h, 066h, 066h, 000h \
+icon_player:
+  db 000h, 000h, 0eeh, 0eeh, 0eeh, 000h, 000h ; 1
+  db 000h, 000h, 0eeh, 0eeh, 0eeh, 000h, 000h ; 5
+  db 000h, 000h, 0aah, 0aah, 0aah, 000h, 000h ; 9
+  db 000h, 000h, 033h, 000h, 033h, 000h, 000h ; 13
+
+  db 000h, 000h, 088h, 0eeh, 088h, 000h, 000h ; 2
+  db 000h, 000h, 000h, 0eeh, 000h, 000h, 000h ; 6
+  db 000h, 000h, 0aah, 0aah, 0aah, 000h, 000h ; 10
+  db 000h, 000h, 033h, 000h, 033h, 000h, 000h ; 14
+
+  db 000h, 000h, 0eeh, 0eeh, 0eeh, 000h, 000h ; 3
+  db 0eeh, 0aah, 0aah, 0aah, 0aah, 0aah, 0eeh ; 7
+  db 000h, 000h, 022h, 022h, 022h, 000h, 000h ; 11
+  db 000h, 000h, 033h, 000h, 033h, 000h, 000h ; 15
+
+  db 000h, 000h, 0eeh, 088h, 0eeh, 000h, 000h ; 4
+  db 0eeh, 0aah, 0aah, 0aah, 0aah, 0aah, 0eeh ; 8
+  db 000h, 000h, 033h, 033h, 033h, 000h, 000h ; 12
+  db 000h, 066h, 066h, 000h, 066h, 066h, 000h ; 16
 
 section .bss
 
@@ -107,7 +110,10 @@ game_loop:
   mov di, player_x_prev
   mov [draw_rect_xy_ptr], di
   mov dl, [color_bg]
-  call draw_rect             ; Erase to BG color at player's previous position
+  call draw_rect_optimized             ; Erase to BG color at player's previous position
+
+  ; Takes 615 cycles to do draw_rect
+
 
   ;mov di, player_x
   ;mov [draw_rect_xy_ptr], di
