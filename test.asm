@@ -3,14 +3,17 @@
 [cpu 8086]
 [org 100h]
 
-%define VIDEO_SEG 0xb800
+%define FRAMEBUFFER_SEG 0x1800
+%define BACKGROUND_SEG 0x2000
+%define COMPOSITOR_SEG 0x2800
+; 0x3000, 0x3800 are two other available 32kb chunks
 
 %include 'std/stdio.mac'
 
 %macro setIndicator 1
-  xor di, di
-  mov al, %1
-  stosb
+  mov di, FRAMEBUFFER_SEG   ; ES to destination (framebuffer)
+  mov es, di
+  mov byte [es:0], %1
 %endmacro
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -18,15 +21,14 @@
 section .data
 
 str_crlf: db 0xa, 0xd, '$'
+err_notEnoughMemory: db 'Error: Not enough free memory to play this dazzling game!$'
 
-color_bg: db 0x1
-color_player: db 0xa
+color_bg: db 1
 
 is_running: db 1
 
-player_x: dw 1
+player_x: dw 160
 player_y: dw 100
-
 player_x_prev: dw 160
 player_y_prev: dw 100
 
@@ -36,25 +38,30 @@ draw_rect_xy_ptr: dw 0
 draw_rect_w: dw 14
 draw_rect_h: dw 16
 
+rect_bitblt_x: dw 0
+rect_bitblt_y: dw 0
+rect_bitblt_w: dw 320
+rect_bitblt_h: dw 200
+
 icon_player:
   db 000h, 000h, 0eeh, 0eeh, 0eeh, 000h, 000h ; 1
-  db 000h, 000h, 0eeh, 0eeh, 0eeh, 000h, 000h ; 5
-  db 000h, 000h, 0aah, 0aah, 0aah, 000h, 000h ; 9
-  db 000h, 000h, 033h, 000h, 033h, 000h, 000h ; 13
-
   db 000h, 000h, 088h, 0eeh, 088h, 000h, 000h ; 2
-  db 000h, 000h, 000h, 0eeh, 000h, 000h, 000h ; 6
-  db 000h, 000h, 0aah, 0aah, 0aah, 000h, 000h ; 10
-  db 000h, 000h, 033h, 000h, 033h, 000h, 000h ; 14
-
   db 000h, 000h, 0eeh, 0eeh, 0eeh, 000h, 000h ; 3
-  db 0eeh, 0aah, 0aah, 0aah, 0aah, 0aah, 0eeh ; 7
-  db 000h, 000h, 022h, 022h, 022h, 000h, 000h ; 11
-  db 000h, 000h, 033h, 000h, 033h, 000h, 000h ; 15
-
   db 000h, 000h, 0eeh, 088h, 0eeh, 000h, 000h ; 4
+  
+  db 000h, 000h, 0eeh, 0eeh, 0eeh, 000h, 000h ; 5
+  db 000h, 000h, 000h, 0eeh, 000h, 000h, 000h ; 6
+  db 0eeh, 0aah, 0aah, 0aah, 0aah, 0aah, 0eeh ; 7
   db 0eeh, 0aah, 0aah, 0aah, 0aah, 0aah, 0eeh ; 8
+  
+  db 000h, 000h, 0aah, 0aah, 0aah, 000h, 000h ; 9
+  db 000h, 000h, 0aah, 0aah, 0aah, 000h, 000h ; 10
+  db 000h, 000h, 022h, 022h, 022h, 000h, 000h ; 11
   db 000h, 000h, 033h, 033h, 033h, 000h, 000h ; 12
+  
+  db 000h, 000h, 033h, 000h, 033h, 000h, 000h ; 13
+  db 000h, 000h, 033h, 000h, 033h, 000h, 000h ; 14
+  db 000h, 000h, 033h, 000h, 033h, 000h, 000h ; 15
   db 000h, 066h, 066h, 000h, 066h, 066h, 000h ; 16
 
 section .bss
@@ -69,22 +76,41 @@ oldInt9h: resb 4
 section .text
 
 ; Get the initial video mode and save it to [originalVideoMode]
-mov ax, 0f00h                ; AH = 0x0f (get video mode)
+mov ax, 0x0f00               ; AH = 0x0f (get video mode)
 int 10h                      ; Call INT10h fn 0x0f which will store the current video mode in AL
 mov [originalVideoMode], al  ; Store it into the byte pointed to by originalVideoMode.
 
 ; Change the video mode to Mode 9 (320x200, 16 colors)
-mov ax, 9h                   ; AH = 0x00 (set video mode), AL <- 9 (new mode)
+mov ax, 0x0009               ; AH = 0x00 (set video mode), AL <- 9 (new mode)
 int 10h                      ; Call INT10h fn 0 to change the video mode
+
+;TEST TEST TEST
+
+; Fill the background and compositor buffers with the initial background color
+mov dl, [color_bg]
+mov di, BACKGROUND_SEG
+mov es, di
+call fill_page
+mov di, COMPOSITOR_SEG
+mov es, di
+call fill_page
+
+;End TEST TEST TEST
+
 
 call install_keyboard_handler
 
-mov di, VIDEO_SEG   ; ES to destination (framebuffer)
-push es
-mov es, di
-
-mov dl, [color_bg]   ; Fill the background buffer
-call cls
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;
+; TODO: Try a simplified scheme of copying the entire screen every time:
+; - Set up 2 offscreen buffers: background & compositing
+; - Draw background into background buffer
+; - Each time through loop:
+;   - Copy background buffer to compositing buffer
+;   - Draw sprites at correct locations in compositing buffer
+;   - Copy compositing buffer to framebuffer
+;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 game_loop:
 
@@ -107,23 +133,25 @@ game_loop:
 
   setIndicator 0x44
 
+  mov si, COMPOSITOR_SEG
+  mov es, si
+
   mov di, player_x_prev
   mov [draw_rect_xy_ptr], di
   mov dl, [color_bg]
   call draw_rect_optimized             ; Erase to BG color at player's previous position
 
-  ; Takes 615 cycles to do draw_rect
-
-
-  ;mov di, player_x
-  ;mov [draw_rect_xy_ptr], di
-  ;mov dl, [color_player]
-  ;call draw_rect             ; Draw the player rectangle
-
   mov di, player_x
   mov [draw_rect_xy_ptr], di
   mov si, icon_player
   call draw_icon               ; Draw the player icon
+
+  ; Copy the whole background buffer to the screen
+  mov word [rect_bitblt_w], 320
+  mov word [rect_bitblt_h], 200
+  mov si, COMPOSITOR_SEG
+  mov di, FRAMEBUFFER_SEG
+  call blt_rect
 
   setIndicator 0xaa
 
@@ -160,6 +188,7 @@ draw_icon:
 .copyLine:
   mov ax, [draw_rect_h]
   sub ax, cx  ; Now AX is the icon line number
+  
   push cx
 
   mov di, [draw_rect_xy_ptr] ; dereference Y location
@@ -254,3 +283,26 @@ draw_rect:
   loop .copyLine
 
   ret
+
+
+pussycat: ; cl is page/color. 2 and 6 are the ones available to us in 320x200x16.
+; TEST TEST TEST
+; JAF: page flip via int 10h fn 5
+; JAF: 2, 6, and 10 seem to be valid pages
+; JAF: Video page seems to be 6 initially, as setting pages to 6 still shows the blue background
+; JAF: test that with something different on each page
+; JAF: have spacebar swap pages
+mov ah, 0x5
+mov al, 0x83
+mov bh, cl
+mov bl, cl
+int 10h
+; end TEST TEST TEST
+
+; Fill the background buffer with the background color
+mov di, FRAMEBUFFER_SEG
+mov es, di
+mov dl, cl
+call fill_page
+
+ret

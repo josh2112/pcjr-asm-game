@@ -39,6 +39,16 @@ draw_rect_optimized:
 
   and bx, 0b11    ; BX = bank number (0-3)
   mov cl, 13      ; Faster alternative to multiplying BX by the
+  shl bx, cl      ; bank width _ptr] ; dereference Y location
+  add ax, [di+2] ; Now AX is the framebuffer row number
+
+  ; Set DI to start byte of left side of line
+  mov bx, ax      ; Faster alternative to dividing AX by 4: shift
+  shr ax, 1       ; right twice for quotient, mask with 0b11 for
+  shr ax, 1       ; remainder. Now AX is the row within the bank
+
+  and bx, 0b11    ; BX = bank number (0-3)
+  mov cl, 13      ; Faster alternative to multiplying BX by the
   shl bx, cl      ; bank width (0x2000): shift left by 13.
   ; Now BX is bank offset
 
@@ -90,7 +100,7 @@ putpixel:
   ; Set the segment address to the right bank (0xB8000 + bank start)
   mov cl, 9       ; Faster alternative to multiplying AX by the
   shl ax, cl      ; bank width (0x200): shift left by 9.
-  add ax, VIDEO_SEG  ; Offset by start of video memory
+  add ax, FRAMEBUFFER_SEG  ; Offset by start of video memory
   mov es, ax      ; ES = absolute start-of-bank address
 
   mov ax, dx
@@ -123,7 +133,7 @@ putpixel:
     ret
 
 ; Fills the framebuffer pointed to by ES with the color indexed by the low nibble of DL
-cls:
+fill_page:
   ; Copy the low nibble of DL to the high nibble
   and dl, 0x0f ; Clear the high nibble
   mov dh, dl   ; Make a copy in DH
@@ -138,5 +148,74 @@ cls:
   rep stosw
 
   ret
+
+; Copies the rectangle specified by rect_bitblt from the
+; offscreen buffer to the framebuffer.
+blt_rect:
+  push bp
+  mov bp, sp  ; Locals:
+  sub sp, 2   ;  - width of each line copy (in bytes): 2 bytes at [bp-2]
+
+  push ds         ; Set DS to source (offscreen buffer) and
+  push es         ; ES to destination (framebuffer)
+  ;mov si, BACKGROUND_SEG
+  mov ds, si
+  ;mov di, FRAMEBUFFER_SEG
+  mov es, di
+
+  ; Calculate number of extra bytes to add to stosb count
+  ; due to X position or width being odd
+  mov ax, [cs:rect_bitblt_x]
+  and ax, 0x1
+  mov bx, [cs:rect_bitblt_w]
+  and bx, 0x1
+  add ax, bx
+
+  mov bx, [cs:rect_bitblt_w] ; Width of each line to copy
+  shr bx, 1                  ; Because each byte encodes 2 pixels
+  add bx, ax                 ; Add any extra bytes
+  mov [bp-2], bx             ; Store as local variable
+
+  mov cx, [cs:rect_bitblt_h] ; Number of lines to copy
+
+.copyLine:
+  mov ax, [cs:rect_bitblt_h]
+  sub ax, cx
+  add ax, [cs:rect_bitblt_y]  ; Now AX is vertical line number
+  push cx
+
+  ; Set SI and DI to start byte of left side of line
+  mov si, ax      ; Faster alternative to dividing AX by 4: shift
+  shr ax, 1       ; right twice for quotient, mask with 0b11 for
+  shr ax, 1       ; remainder. Now AX = row within bank
+
+  and si, 0b11    ; SI = bank number (0-3)
+  mov cl, 13      ; Faster alternative to multiplying SI by the
+  shl si, cl      ; bank width (0x2000): shift left by 13.
+
+
+  ; Calc byte index of pixel: SI += (AX * 320 + rect_bitblt.x) / 2
+  mov bx, 320
+  mul bx
+  add ax, [cs:rect_bitblt_x]
+  shr ax, 1   ; Because each byte encodes 2 pixels
+  add si, ax
+
+  mov di, si
+
+  mov cx, [bp-2]
+  rep movsb                  ; Copy CX bytes
+
+  pop cx
+  loop .copyLine
+
+.done:
+  pop es          ; Restore our segment registers
+  pop ds
+  mov sp, bp      ; Destroy locals
+  pop bp
+
+  ret
+
 
 %endif ; _320X200X16_ASM

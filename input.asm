@@ -10,22 +10,18 @@ process_key:
   cmp byte [keyboardState+KEY_ESC], 1
   jne .testUp
   mov byte [is_running], 0
-  ret
 .testUp:
   cmp byte [keyboardState+KEY_UP], 1
   jne .testDown
   dec word [player_y]
-  ret
 .testDown:
   cmp byte [keyboardState+KEY_DOWN], 1
   jne .testLeft
   inc word [player_y]
-  ret
 .testLeft:
   cmp byte [keyboardState+KEY_LEFT], 1
   jne .testRight
   dec word [player_x]
-  ret
 .testRight:
   cmp byte [keyboardState+KEY_RIGHT], 1
   jne .done
@@ -84,7 +80,7 @@ install_keyboard_handler:
   mov dx, [es:9h*4+2]               ; Then copy the segment
   mov [oldInt9h+2], dx              ; Store it in oldInt9h + 2
   mov word [es:9h*4], handle_int9h  ; Install the new handle - first the offset,
-  mov word [es:9h*4+2], cs          ; Then the segment
+  mov word [es:9h*4+2], cs          ; then the segment
   pop es
   sti                               ; Reenable interrupts
   ret
