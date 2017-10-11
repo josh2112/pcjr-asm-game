@@ -30,7 +30,7 @@ draw_rect:
     mov cl, 13      ; Faster alternative to multiplying SI by the
     shl si, cl      ; bank width (0x2000): shift left by 13.
 
-    ; Calc byte index of pixel: SI += (AX * 320 + rect_bitblt.x) / 2
+    ; Calc byte index of pixel: SI += (AX * 320 + rect_x) / 2
     mov bx, 320
     push dx
     mul bx
@@ -169,7 +169,7 @@ blt_rect:
   shl si, cl      ; bank width (0x2000): shift left by 13.
 
 
-  ; Calc byte index of pixel: SI += (AX * 320 + rect_bitblt.x) / 2
+  ; Calc byte index of pixel: SI += (AX * 320 + rect_x) / 2
   mov bx, 320
   mul bx
   add ax, [bp+8]

@@ -23,6 +23,8 @@ section .data
 
   player_x: dw 160
   player_y: dw 100
+  player_w: dw 14
+  player_h: dw 16
   player_x_prev: dw 160
   player_y_prev: dw 100
 
@@ -31,11 +33,6 @@ section .data
   draw_rect_xy_ptr: dw 0
   draw_rect_w: dw 14
   draw_rect_h: dw 16
-
-  rect_bitblt_x: dw 0
-  rect_bitblt_y: dw 0
-  rect_bitblt_w: dw 14
-  rect_bitblt_h: dw 16
 
   icon_player:
     db 000h, 000h, 0eeh, 0eeh, 0eeh, 000h, 000h ; 1
@@ -78,9 +75,12 @@ mov [originalVideoMode], al  ; Store it into the byte pointed to by originalVide
 mov ax, 0x0009               ; AH = 0x00 (set video mode), AL <- 9 (new mode)
 int 10h                      ; Call INT10h fn 0 to change the video mode
 
-; Fill the background buffer and screen with the initial background color
+; Fill all buffers with the initial background color
 mov dl, [color_bg]
 mov di, [BACKGROUND_SEG]
+mov es, di
+call fill_page
+mov di, [COMPOSITOR_SEG]
 mov es, di
 call fill_page
 mov di, [FRAMEBUFFER_SEG]
@@ -114,23 +114,25 @@ game_loop:
   mov si, player_x_prev
   mov [draw_rect_xy_ptr], si
   mov dl, [color_bg]
-  call draw_rect     ; Erase to BG color at player's previous position
+  call draw_rect             ; Erase to BG color at player's previous position
 
   mov di, player_x
   mov [draw_rect_xy_ptr], di
   mov si, icon_player
-  call draw_icon               ; Draw the player icon
+  call draw_icon             ; Draw the player icon
 
   mov ax, [player_x_prev]
+  sub ax, 1
   mov bx, [player_y_prev]
-  mov [rect_bitblt_x], ax
-  mov [rect_bitblt_y], bx
-  mov si, [COMPOSITOR_SEG]
-  mov di, [FRAMEBUFFER_SEG]
-  push word [rect_bitblt_h]
-  push word [rect_bitblt_w]
-  push word [player_y_prev]
-  push word [player_x_prev]
+  sub bx, 1
+  mov cx, [player_w]
+  add cx, 2
+  mov dx, [player_h]
+  add dx, 2
+  push dx
+  push cx
+  push bx
+  push ax
   push word [COMPOSITOR_SEG]
   push word [FRAMEBUFFER_SEG]
   call blt_rect
@@ -184,7 +186,7 @@ draw_icon:
   shl bx, cl      ; bank width (0x2000): shift left by 13.
   ; Now BX is bank offset
 
-  ; Calc byte index of pixel: BX += (AX * 320 + rect_bitblt.x) / 2
+  ; Calc byte index of pixel: BX += (AX * 320 + rect_x) / 2
   push bx
   mov bx, 320
   push dx
