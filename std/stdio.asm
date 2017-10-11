@@ -1,0 +1,82 @@
+; stdio.asm: Routines for 8088 assembly that would be classified as "stdio"
+; in C, such as processing input
+
+; Much like C/C++, these %ifndef/%define/%endif keep the file from being
+; accidentally included multiple times
+%ifndef STDIO_ASM
+%define STDIO_ASM
+
+section .data
+
+  keyboardState: times 128 db 0
+
+section .text
+
+handle_int9h:
+  push ax
+  push bx
+  pushf
+
+  xor ax, ax
+  in al, 0x60         ; Read from keyboard
+  xchg bx, ax
+  test bl, 0x80       ; If high bit is set it's a key release
+  jnz .keyReleased
+
+  ; NOTE: Using DS: prefix for keyboard state here because no telling what
+  ; DS will be set to when this is called!
+  .keyPressed:
+    mov byte [ds:keyboardState+bx], 1  ; Turn on that key in the buffer
+    jmp .done
+  .keyReleased:
+    and bl, 0x7f                    ; Remove key-released flag
+    mov byte [ds:keyboardState+bx], 0  ; Turn off that key in the buffer
+  .done:
+    ; Clear keyboard IRQ if pending
+    in al, 0x61     ; Grab keyboard state
+    mov ah, al
+    or al, 0x80
+    out 0x61, al    ; Send state w/ ack bit set
+    xchg al, ah
+    out 0x61, al    ; Send original state
+    
+    ; Signal end-of-interrupt
+    mov al, 0x20
+    out 0x20, al
+    
+    ; Restore state
+    popf
+    pop bx
+    pop ax
+    sti
+    iret
+
+
+; Redirect INT9h to the handle_int9h procedure.
+install_keyboard_handler:
+  cli                               ; Disable interrupts
+  xor di, di
+  mov es, di                        ; Set ES to 0
+  mov dx, [es:9h*4]                 ; Copy the offset of the INT 9h handler
+  mov [oldInt9h], dx                ; Store it in oldInt9h
+  mov dx, [es:9h*4+2]               ; Then copy the segment
+  mov [oldInt9h+2], dx              ; Store it in oldInt9h + 2
+  mov word [es:9h*4], handle_int9h  ; Install the new handle - first the offset,
+  mov word [es:9h*4+2], cs          ; then the segment
+  sti                               ; Reenable interrupts
+  ret
+
+
+; Restore default INT9h processing.
+restore_keyboard_handler:
+  cli
+  xor di, di
+  mov es, di
+  mov dx, [oldInt9h]
+  mov word [es:9h*4], dx
+  mov dx, [oldInt9h+2]
+  mov word [es:9h*4+2], dx
+  sti
+  ret
+
+%endif ; STDIO_ASM

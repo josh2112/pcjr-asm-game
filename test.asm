@@ -28,9 +28,7 @@ section .data
   player_x_prev: dw 160
   player_y_prev: dw 100
 
-  keyboardState: times 128 db 0
-
-  icon_player:
+  player_icon:
     db 000h, 000h, 0eeh, 0eeh, 0eeh, 000h, 000h ; 1
     db 000h, 000h, 088h, 0eeh, 088h, 000h, 000h ; 2
     db 000h, 000h, 0eeh, 0eeh, 0eeh, 000h, 000h ; 3
@@ -114,13 +112,13 @@ game_loop:
 
   mov di, player_x
   mov [draw_rect_xy_ptr], di
-  mov si, icon_player
+  mov si, player_icon
   call draw_icon             ; Draw the player icon
 
   mov ax, [player_x_prev]
-  sub ax, 1
+  dec ax
   mov bx, [player_y_prev]
-  sub bx, 1
+  dec bx
   mov cx, [player_w]
   add cx, 2
   mov dx, [player_h]
