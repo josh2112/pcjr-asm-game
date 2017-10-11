@@ -29,7 +29,7 @@ handle_int9h:
     mov byte [ds:keyboardState+bx], 1  ; Turn on that key in the buffer
     jmp .done
   .keyReleased:
-    and bl, 0x7f                    ; Remove key-released flag
+    and bl, 0x7f                       ; Remove key-released flag
     mov byte [ds:keyboardState+bx], 0  ; Turn off that key in the buffer
   .done:
     ; Clear keyboard IRQ if pending
@@ -39,7 +39,6 @@ handle_int9h:
     out 0x61, al    ; Send state w/ ack bit set
     xchg al, ah
     out 0x61, al    ; Send original state
-    
     ; Signal end-of-interrupt
     mov al, 0x20
     out 0x20, al
