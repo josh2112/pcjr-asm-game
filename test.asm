@@ -100,6 +100,8 @@ game_loop:
   cmp byte [is_running], 0   ; If not running (ESC key pressed),
   je clean_up                ; jump out of game loop
 
+  call bound_player
+  
   call waitForRetrace
 
   mov di, [COMPOSITOR_SEG]
@@ -115,14 +117,35 @@ game_loop:
   mov si, player_icon
   call draw_icon             ; Draw the player icon
 
-  mov ax, [player_x_prev]
-  dec ax
-  mov bx, [player_y_prev]
-  dec bx
-  mov cx, [player_w]
-  add cx, 2
-  mov dx, [player_h]
-  add dx, 2
+  ; Combine player previous and current rect:
+  ; AX = x_prev - x
+  ; if AX > 0, X = x
+  ; else, X = x_prev
+  ; W = W + AX
+  ;
+  ; BX = y_prev - y
+  ; if BX > 0, Y = y
+  ; else, Y = y_prev
+  ; H = H + BX
+
+  mov ax, [player_x]
+  mov cx, [player_x_prev]
+  sub cx, ax
+  jns .next1
+    mov ax, [player_x_prev]
+    neg cx
+  .next1:
+  add cx, [player_w]
+
+  mov bx, [player_y]
+  mov dx, [player_y_prev]
+  sub dx, bx
+  jns .next2
+    mov bx, [player_y_prev]
+    neg dx
+  .next2:
+  add dx, [player_h]
+  
   push dx
   push cx
   push bx
@@ -154,6 +177,29 @@ int 21h
 %include 'std/320x200x16.asm'
 %include 'input.asm'
 %include 'renderer.asm'
+
+bound_player:
+  cmp word [player_x], 0
+  jge .next
+  mov word [player_x], 0
+  .next:
+    mov ax, 320
+    sub ax, [player_w]
+    cmp word [player_x], ax
+    jle .next2
+    mov word [player_x], ax
+  .next2:
+    cmp word [player_y], 0
+    jge .next3
+    mov word [player_y], 0
+  .next3:
+    mov ax, 200
+    sub ax, [player_h]
+    cmp word [player_y], ax
+    jle .done
+    mov word [player_y], ax
+  .done:
+  ret
 
 ; Copies the icon pointed to by SI to the X,Y location referenced
 ; by [draw_rect_xy_ptr] with a size of [draw_rect_w], [draw_rect_h].
