@@ -42,14 +42,14 @@ handle_int9h:
   test bl, 0x80       ; If high bit is set it's a key release
   jnz .keyReleased
 
-; NOTE: Using CS: prefix for keyboard state here because no telling what
+; NOTE: Using DS: prefix for keyboard state here because no telling what
 ; DS will be set to when this is called!
 .keyPressed:
-  mov byte [cs:keyboardState+bx], 1  ; Turn on that key in the buffer
+  mov byte [ds:keyboardState+bx], 1  ; Turn on that key in the buffer
   jmp .done
 .keyReleased:
   and bl, 0x7f                    ; Remove key-released flag
-  mov byte [cs:keyboardState+bx], 0  ; Turn off that key in the buffer
+  mov byte [ds:keyboardState+bx], 0  ; Turn off that key in the buffer
 .done:
   ; Clear keyboard IRQ if pending
   in al, 61h     ; Grab keyboard state

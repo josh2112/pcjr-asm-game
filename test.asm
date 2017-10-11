@@ -30,10 +30,6 @@ section .data
 
   keyboardState: times 128 db 0
 
-  draw_rect_xy_ptr: dw 0
-  draw_rect_w: dw 14
-  draw_rect_h: dw 16
-
   icon_player:
     db 000h, 000h, 0eeh, 0eeh, 0eeh, 000h, 000h ; 1
     db 000h, 000h, 088h, 0eeh, 088h, 000h, 000h ; 2

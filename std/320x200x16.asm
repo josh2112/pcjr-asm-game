@@ -3,6 +3,13 @@
 %ifndef _320X200X16_ASM
 %define _320X200X16_ASM
 
+section .data
+
+  draw_rect_xy_ptr: dw 0
+  draw_rect_w: dw 14
+  draw_rect_h: dw 16
+
+section .text
 
 ; Draws a rectangle of color DL to the X,Y location referenced by
 ; [draw_rect_xy_ptr] with a size of [draw_rect_w], [draw_rect_h].
