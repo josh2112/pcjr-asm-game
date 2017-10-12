@@ -6,13 +6,14 @@ ifeq ($(OS),Windows_NT)
 	DOSBOX="$(ProgramFiles)\DOSBox-0.74\dosbox"
 	RM=cmd \/C del
 else
-	NASM=nasm
 	RM=rm
 	UNAME_S := $(shell uname -s)
 	ifeq ($(UNAME_S),Darwin)
 		DOSBOX=/Applications/DOSBox.app/Contents/MacOS/DOSBox
+		NASM=/usr/local/bin/nasm
 	else # assume Linux
 		DOSBOX=DISPLAY=:0 dosbox
+		NASM=nasm
 	endif
 endif
 
@@ -20,7 +21,7 @@ TARGET=test
 TARGET.COM=$(TARGET).com
 
 MACROS=std/stdio.mac
-SRCS=std/stdlib.asm std/320x200x16.asm input.asm renderer.asm
+SRCS=std/stdlib.asm std/320x200x16.asm std/stdio.asm input.asm renderer.asm
 DEPS=$(MACROS) $(SRCS)
 
 NASM_OPTS=-f bin -l $(TARGET).lst

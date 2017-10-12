@@ -3,80 +3,163 @@
 [cpu 8086]
 [org 100h]
 
-%define key_esc 0x01
-%define key_up 0x48
-%define key_left 0x4b
-%define key_right 0x4d
-%define key_down 0x50
+%include 'std/stdio.mac'
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 section .data
 
-str_crlf: db 0xa, 0xd, '$'
+  FRAMEBUFFER_SEG: dw 0x1800
+  BACKGROUND_SEG: dw 0x2000
+  COMPOSITOR_SEG: dw 0x2800
+  ; 0x3000, 0x3800 are two other available 32kb chunks
 
-color_bg: db 1
-color_player: db 10
-color_draw_rect: db 0
+  str_crlf: db 0xa, 0xd, '$'
+  err_notEnoughMemory: db 'Error: Not enough free memory to play this dazzling game!$'
 
-is_running: db 1
-player_x: dw 160
-player_y: dw 100
+  color_bg: db 1
 
-keyboardState: times 128 db 0
+  is_running: db 1
+
+  player_x: dw 160
+  player_y: dw 100
+  player_w: dw 14
+  player_h: dw 16
+  player_x_prev: dw 160
+  player_y_prev: dw 100
+
+  player_icon:
+    db 000h, 000h, 0eeh, 0eeh, 0eeh, 000h, 000h ; 1
+    db 000h, 000h, 088h, 0eeh, 088h, 000h, 000h ; 2
+    db 000h, 000h, 0eeh, 0eeh, 0eeh, 000h, 000h ; 3
+    db 000h, 000h, 0eeh, 088h, 0eeh, 000h, 000h ; 4
+    
+    db 000h, 000h, 0eeh, 0eeh, 0eeh, 000h, 000h ; 5
+    db 000h, 000h, 000h, 0eeh, 000h, 000h, 000h ; 6
+    db 0eeh, 0aah, 0aah, 0aah, 0aah, 0aah, 0eeh ; 7
+    db 0eeh, 0aah, 0aah, 0aah, 0aah, 0aah, 0eeh ; 8
+    
+    db 000h, 000h, 0aah, 0aah, 0aah, 000h, 000h ; 9
+    db 000h, 000h, 0aah, 0aah, 0aah, 000h, 000h ; 10
+    db 000h, 000h, 022h, 022h, 022h, 000h, 000h ; 11
+    db 000h, 000h, 033h, 033h, 033h, 000h, 000h ; 12
+    
+    db 000h, 000h, 033h, 000h, 033h, 000h, 000h ; 13
+    db 000h, 000h, 033h, 000h, 033h, 000h, 000h ; 14
+    db 000h, 000h, 033h, 000h, 033h, 000h, 000h ; 15
+    db 000h, 066h, 066h, 000h, 066h, 066h, 000h ; 16
 
 section .bss
 
-originalVideoMode: resb 1
-buf16: resb 16
+  originalVideoMode: resb 1
+  buf16: resb 16
 
-oldInt9h: resb 4
+  oldInt9h: resb 4
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 section .text
 
 ; Get the initial video mode and save it to [originalVideoMode]
-mov ax, 0f00h                ; AH <- 0x0f (get video mode)
+mov ax, 0x0f00               ; AH = 0x0f (get video mode)
 int 10h                      ; Call INT10h fn 0x0f which will store the current video mode in AL
 mov [originalVideoMode], al  ; Store it into the byte pointed to by originalVideoMode.
 
 ; Change the video mode to Mode 9 (320x200, 16 colors)
-mov ax, 9h                   ; AH <- 0x00 (set video mode), AL <- 9 (new mode)
+mov ax, 0x0009               ; AH = 0x00 (set video mode), AL <- 9 (new mode)
 int 10h                      ; Call INT10h fn 0 to change the video mode
+
+; Fill all buffers with the initial background color
+mov dl, [color_bg]
+mov di, [BACKGROUND_SEG]
+mov es, di
+call fill_page
+mov di, [COMPOSITOR_SEG]
+mov es, di
+call fill_page
+mov di, [FRAMEBUFFER_SEG]
+mov es, di
+call fill_page
+
 
 call install_keyboard_handler
 
-mov dl, [color_bg]           ; Paint the whole screen with the background color
-call cls
 
 game_loop:
+
+  ; Copy player_[x,y] to player_[x,y]_prev
+  mov di, ds
+  mov es, di
+  mov si, player_x
+  mov di, player_x_prev
+  mov cx, 2
+  rep movsw
+
+  call process_keys           ; Check keyboard state
+
+  cmp byte [is_running], 0   ; If not running (ESC key pressed),
+  je clean_up                ; jump out of game loop
+
+  call bound_player
+  
   call waitForRetrace
 
-  mov ax, 0xb800
-  mov es, ax
-  mov al, 0x44
-  xor di, di
-  stosb
+  push word [player_h]
+  push word [player_w]
+  push word [player_y_prev]
+  push word [player_x_prev]
+  push word [BACKGROUND_SEG]
+  push word [COMPOSITOR_SEG]
+  call blt_rect
 
-  mov dx, [color_bg]
-  mov [color_draw_rect], dl
-  call draw_rect             ; Erase at the player's previous position
+  push word [player_y]
+  push word [player_x]
+  push word [player_h]
+  push word [player_w]
+  mov ax, player_icon
+  push ax
+  push word [COMPOSITOR_SEG]
+  call draw_icon             ; Draw the player icon
 
-  call process_key           ; Do something with the key
+  ; Combine player previous and current rect:
+  ; AX = x_prev - x
+  ; if AX > 0, X = x
+  ; else, X = x_prev
+  ; W = W + AX
+  ;
+  ; BX = y_prev - y
+  ; if BX > 0, Y = y
+  ; else, Y = y_prev
+  ; H = H + BX
 
-  mov dl, [color_player]
-  mov [color_draw_rect], dl
-  call draw_rect             ; Draw the player graphic
+  mov ax, [player_x]
+  mov cx, [player_x_prev]
+  sub cx, ax
+  jns .next1
+    mov ax, [player_x_prev]
+    neg cx
+  .next1:
+  add cx, [player_w]
 
-  mov ax, 0xb800
-  mov es, ax
-  mov al, 0xee
-  xor di, di
-  stosb
+  mov bx, [player_y]
+  mov dx, [player_y_prev]
+  sub dx, bx
+  jns .next2
+    mov bx, [player_y_prev]
+    neg dx
+  .next2:
+  add dx, [player_h]
+  
+  push dx
+  push cx
+  push bx
+  push ax
+  push word [COMPOSITOR_SEG]
+  push word [FRAMEBUFFER_SEG]
+  call blt_rect
 
-  cmp byte [is_running], 0   ; If still running (ESC key not pressed),
-  jne game_loop              ; jump back to game_loop
+  jmp game_loop
+
 
 clean_up:
 
@@ -89,13 +172,97 @@ xor ah, ah
 int 10h
 
 ; Exit the program
-mov ax, 4c00h
+mov ax, 0x4c00
 int 21h
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-%include 'std/stdio.mac'
 %include 'std/stdlib.asm'
 %include 'std/320x200x16.asm'
 %include 'input.asm'
 %include 'renderer.asm'
+
+bound_player:
+  cmp word [player_x], 0
+  jge .next
+  mov word [player_x], 0
+  .next:
+    mov ax, 320
+    sub ax, [player_w]
+    cmp word [player_x], ax
+    jle .next2
+    mov word [player_x], ax
+  .next2:
+    cmp word [player_y], 0
+    jge .next3
+    mov word [player_y], 0
+  .next3:
+    mov ax, 200
+    sub ax, [player_h]
+    cmp word [player_y], ax
+    jle .done
+    mov word [player_y], ax
+  .done:
+  ret
+
+; draw_icon( fb_dest, icon_ptr, icon_w, icon_h, x, y)
+; Copies icon data into the destination buffer at the specified position
+; NOTE: X and icon width must be even!
+; Args:
+;   bp+4 = fb_dest, bp+6 = icon_ptr,
+;   bp+8 = icon_w, bp+10 = icon_h, bp+12 = x, bp+14 = y
+draw_icon:
+  push bp
+  mov bp, sp
+
+  mov cx, [bp+10]
+  mov es, [bp+4]
+  mov si, [bp+6]
+
+.copyLine:
+  ; Compute which row number we're writing to in the framebuffer
+  mov ax, [bp+10] ; Start with icon height
+  sub ax, cx      ; Subtract countdown to give us icon row
+  add ax, [bp+14] ; Add Y location to icon row number
+  
+  ; Convert the row number to a bank number (BX) and row within that bank (AX)
+  mov bx, ax      ; Faster alternative to dividing AX by 4: shift
+  shr ax, 1       ; right twice for quotient, mask with 0b11 for
+  shr ax, 1       ; remainder. Now AX is the row within the bank
+  and bx, 0b11    ; BX = bank number (0-3)
+  
+  ; Convert bank number (BX) to a byte offset
+  push cx
+  mov cl, 13      ; Faster alternative to multiplying BX by the
+  shl bx, cl      ; bank width (0x2000): shift left by 13.
+
+  ; Calc byte index of pixel: DI = BX + (AX * 320 + x) / 2
+  push bx
+  mov bx, 320
+  push dx
+  mul bx           ; AX * 320
+  pop dx
+  add ax, [bp+12]  ; ... + x
+  shr ax, 1        ; ... / 2
+  pop bx
+  add ax, bx       ; BX + ...
+  mov di, ax
+
+  mov cx, [bp+8]
+  shr cx, 1        ; Because each byte encodes 2 pixels
+
+.copyByte:
+  mov al, [si]
+  test al, al
+  jz .afterCopyByte
+  mov [es:di], al
+.afterCopyByte:
+  inc si
+  inc di
+  loop .copyByte
+
+  pop cx
+  loop .copyLine
+
+  pop bp
+  ret 12
