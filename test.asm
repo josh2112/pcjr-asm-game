@@ -13,10 +13,7 @@ section .data
   BACKGROUND_SEG: dw 0x2000
   COMPOSITOR_SEG: dw 0x2800
   ; 0x3000, 0x3800 are two other available 32kb chunks
-
-  str_crlf: db 0xa, 0xd, '$'
-  err_notEnoughMemory: db 'Error: Not enough free memory to play this dazzling game!$'
-
+ 
   color_bg: db 1
 
   is_running: db 1
@@ -52,7 +49,6 @@ section .data
 section .bss
 
   originalVideoMode: resb 1
-  buf16: resb 16
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
