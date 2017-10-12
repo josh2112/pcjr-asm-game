@@ -8,6 +8,16 @@
 %ifndef STDIO_MAC
 %define STDIO_MAC
 
+section .data
+
+  str_crlf: db 0xa, 0xd, '$'
+
+section .bss
+
+  buf16: resb 16
+
+section .text
+
 ; Prints the given '$'-terminated string.
 %macro print 1
 	mov dx, %1
