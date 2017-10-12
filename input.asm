@@ -14,7 +14,7 @@
 ; Processes the keys in the keyboardState buffer.
 ; - Cursor keys (up, down, left, right): Adjust player position.
 ; - Esc key: set is_running to false (game will be exited)
-process_key:
+process_keys:
   cmp byte [keyboardState+KEY_ESC], 1
   jne .testUp
   mov byte [is_running], 0

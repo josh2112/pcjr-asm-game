@@ -95,7 +95,7 @@ game_loop:
   mov cx, 2
   rep movsw
 
-  call process_key           ; Do something with the key
+  call process_keys           ; Check keyboard state
 
   cmp byte [is_running], 0   ; If not running (ESC key pressed),
   je clean_up                ; jump out of game loop
@@ -104,17 +104,21 @@ game_loop:
   
   call waitForRetrace
 
-  mov di, [COMPOSITOR_SEG]
-  mov es, di
+  push word [player_h]
+  push word [player_w]
+  push word [player_y_prev]
+  push word [player_x_prev]
+  push word [BACKGROUND_SEG]
+  push word [COMPOSITOR_SEG]
+  call blt_rect
 
-  mov si, player_x_prev
-  mov [draw_rect_xy_ptr], si
-  mov dl, [color_bg]
-  call draw_rect             ; Erase to BG color at player's previous position
-
-  mov di, player_x
-  mov [draw_rect_xy_ptr], di
-  mov si, player_icon
+  push word [player_y]
+  push word [player_x]
+  push word [player_h]
+  push word [player_w]
+  mov ax, player_icon
+  push ax
+  push word [COMPOSITOR_SEG]
   call draw_icon             ; Draw the player icon
 
   ; Combine player previous and current rect:
@@ -201,46 +205,51 @@ bound_player:
   .done:
   ret
 
-; Copies the icon pointed to by SI to the X,Y location referenced
-; by [draw_rect_xy_ptr] with a size of [draw_rect_w], [draw_rect_h].
-; NOTE: X and width must be even!
+; draw_icon( fb_dest, icon_ptr, icon_w, icon_h, x, y)
+; Copies icon data into the destination buffer at the specified position
+; NOTE: X and icon width must be even!
+; Args:
+;   bp+4 = fb_dest, bp+6 = icon_ptr,
+;   bp+8 = icon_w, bp+10 = icon_h, bp+12 = x, bp+14 = y
 draw_icon:
-  mov cx, [draw_rect_h]
+  push bp
+  mov bp, sp
+
+  mov cx, [bp+10]
+  mov es, [bp+4]
+  mov si, [bp+6]
 
 .copyLine:
-  mov ax, [draw_rect_h]
-  sub ax, cx  ; Now AX is the icon line number
+  ; Compute which row number we're writing to in the framebuffer
+  mov ax, [bp+10] ; Start with icon height
+  sub ax, cx      ; Subtract countdown to give us icon row
+  add ax, [bp+14] ; Add Y location to icon row number
   
-  push cx
-
-  mov di, [draw_rect_xy_ptr] ; dereference Y location
-  add ax, [di+2] ; Now AX is the framebuffer row number
-
-  ; Set DI to start byte of left side of line
+  ; Convert the row number to a bank number (BX) and row within that bank (AX)
   mov bx, ax      ; Faster alternative to dividing AX by 4: shift
   shr ax, 1       ; right twice for quotient, mask with 0b11 for
   shr ax, 1       ; remainder. Now AX is the row within the bank
-
   and bx, 0b11    ; BX = bank number (0-3)
+  
+  ; Convert bank number (BX) to a byte offset
+  push cx
   mov cl, 13      ; Faster alternative to multiplying BX by the
   shl bx, cl      ; bank width (0x2000): shift left by 13.
-  ; Now BX is bank offset
 
-  ; Calc byte index of pixel: BX += (AX * 320 + rect_x) / 2
+  ; Calc byte index of pixel: DI = BX + (AX * 320 + x) / 2
   push bx
   mov bx, 320
   push dx
-  mul bx
+  mul bx           ; AX * 320
   pop dx
-  add ax, [di]   ; add X
-  shr ax, 1      ; Because each byte encodes 2 pixels
+  add ax, [bp+12]  ; ... + x
+  shr ax, 1        ; ... / 2
   pop bx
-  add ax, bx
-
+  add ax, bx       ; BX + ...
   mov di, ax
 
-  mov cx, [draw_rect_w]
-  shr cx, 1      ; Because each byte encodes 2 pixels
+  mov cx, [bp+8]
+  shr cx, 1        ; Because each byte encodes 2 pixels
 
 .copyByte:
   mov al, [si]
@@ -255,4 +264,5 @@ draw_icon:
   pop cx
   loop .copyLine
 
-  ret
+  pop bp
+  ret 12

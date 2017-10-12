@@ -3,61 +3,7 @@
 %ifndef _320X200X16_ASM
 %define _320X200X16_ASM
 
-section .data
-
-  draw_rect_xy_ptr: dw 0
-  draw_rect_w: dw 14
-  draw_rect_h: dw 16
-
 section .text
-
-; Draws a rectangle of color DL to the X,Y location referenced by
-; [draw_rect_xy_ptr] with a size of [draw_rect_w], [draw_rect_h].
-; NOTE: X and width must be even!
-draw_rect:
-  call nibble_to_word
-  mov dl, al  ; We need a byte of color (2 pixels) back in DL
-
-  mov cx, [draw_rect_h] ; Number of lines to copy
-
-  .copyLine:
-    mov ax, [draw_rect_h]
-    sub ax, cx
-    push cx
-
-    mov di, [draw_rect_xy_ptr] ; dereference Y location
-    add ax, [di+2]
-
-    ; Set SI and DI to start byte of left side of line
-    mov si, ax      ; Faster alternative to dividing AX by 4: shift
-    shr ax, 1       ; right twice for quotient, mask with 0b11 for
-    shr ax, 1       ; remainder. Now AX = row within bank
-
-    and si, 0b11    ; SI = bank number (0-3)
-    mov cl, 13      ; Faster alternative to multiplying SI by the
-    shl si, cl      ; bank width (0x2000): shift left by 13.
-
-    ; Calc byte index of pixel: SI += (AX * 320 + rect_x) / 2
-    mov bx, 320
-    push dx
-    mul bx
-    pop dx
-    add ax, [di]   ; add X
-    shr ax, 1      ; Because each byte encodes 2 pixels
-    add si, ax
-
-    mov di, si
-
-    mov cx, [draw_rect_w]
-    shr cx, 1
-    mov al, dl
-    rep stosb         ; Copy CX bytes
-
-    pop cx
-    loop .copyLine
-
-  ret
-
 
 ; Puts color index DL in the pair of pixels specified by BX,AX (x,y)
 ; Clobbers AX, CX, DX
@@ -133,12 +79,16 @@ fill_page:
   ret
 
 ; blt_rect( fb_dest, fb_source, x, y, w, h )
-; Copies the a rectangle of pixels from a source buffer to a destination buffer.
-;  fb_dest (+4): 
+; Copies a rectangle of pixels from a source buffer to a destination buffer.
+; Args:
+;   bp+4 = fb_dest, bp+6 = fb_source,
+;   bp+8 = x, bp+10 = y, bp+12 = w, bp+14 = h
+; Locals:
+;   bp-2 = width of each line copy (in bytes)
 blt_rect:
   push bp
-  mov bp, sp  ; Locals:
-  sub sp, 2   ;  - width of each line copy (in bytes): 2 bytes at [bp-2]
+  mov bp, sp
+  sub sp, 2
 
   push ds         ; Set DS to source and
   push es         ; ES to destination
