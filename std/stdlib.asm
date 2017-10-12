@@ -1,9 +1,10 @@
-; formatting.asm: Datatype conversion routines for 8088 assembly
+; stdlib.asm: Routines for 8088 assembly that would be classified as "stdlib"
+; in C, such as data conversion, memory allocation, etc.
 
 ; Much like C/C++, these %ifndef/%define/%endif keep the file from being
 ; accidentally included multiple times
-%ifndef FORMATTING_ASM
-%define FORMATTING_ASM
+%ifndef STDLIB_ASM
+%define STDLIB_ASM
 
 ; Converts the signed integer in AX to a string and puts it in [DI]
 ; Returns the result (the original DI pointer) in AX
@@ -34,4 +35,4 @@ int_to_string:
   pop ax              ; Pop the original DI into AX
   ret
 
-%endif ; FORMATTING_ASM
+%endif ; STDLIB_ASM
