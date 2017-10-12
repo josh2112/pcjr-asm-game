@@ -10,8 +10,8 @@
 section .data
 
   FRAMEBUFFER_SEG: dw 0x1800
-  BACKGROUND_SEG: dw 0x2000
-  COMPOSITOR_SEG: dw 0x2800
+  BACKGROUND_SEG: dw 0x1000
+  COMPOSITOR_SEG: dw 0x800
   ; 0x3000, 0x3800 are two other available 32kb chunks
  
   color_bg: db 1

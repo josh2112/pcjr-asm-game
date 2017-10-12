@@ -3,7 +3,7 @@
 #
 ifeq ($(OS),Windows_NT)
 	NASM="$(USERPROFILE)\AppData\Local\NASM\nasm"
-	DOSBOX="$(ProgramFiles)\DOSBox-0.74\dosbox"
+	DOSBOX="tools\EmuCR-Dosbox-r4059\dosbox"
 	RM=cmd \/C del
 else
 	RM=rm
