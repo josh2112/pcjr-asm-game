@@ -7,15 +7,15 @@
 ; Clobbers AX, CX, DX
 putpixel:
   push dx         ; Save the color because we need DX for MUL and DIV
-  mov cx, 4
-  xor dx, dx
-  div cx          ; DX = bank number (0-3), AX = row within bank
-  xchg ax, dx     ; AX = bank number (0-3), DX = row within bank
-  mov cx, 0200h   ; bank width
-  push dx
-  mul cx          ; AX = bank memory offset
-  pop dx
-  add ax, 0b800h  ; offset by start of video memory
+  mov dx, ax      ; Faster alternative to dividing AX by 4: shift
+  shr dx, 1       ; right twice for quotient, mask with 0b11 for
+  shr dx, 1       ; remainder.
+  and ax, 0b11    ; AX = bank number (0-3), DX = row within bank
+
+  ; Set the segment address to the right bank (0xB8000 + bank start)
+  mov cl, 9       ; Faster alternative to multiplying AX by the
+  shl ax, cl      ; bank width (0x200): shift left by 9.
+  add ax, 0xb800  ; Offset by start of video memory
   mov es, ax      ; ES = absolute start-of-bank address
 
   mov ax, dx
@@ -38,13 +38,12 @@ putpixel:
     mov cl, 4
     shl dl, cl
     or al, dl       ; Set it from the color index in DL
-    jmp .finish
+    mov [es:si], al  ; Push the updated pixel pair back into memory
+    ret
 
   .setLow:
     and al, 0xf0    ; Clear the low nibble
     or al, dl       ; Set it from the color index in DL
-
-  .finish:
     mov [es:si], al  ; Push the updated pixel pair back into memory
     ret
 

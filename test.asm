@@ -51,7 +51,15 @@ mov dl, [color_bg]           ; Paint the whole screen with the background color
 call cls
 
 game_loop:
-  mov dl, [color_bg]
+  call waitForRetrace
+
+  mov ax, 0xb800
+  mov es, ax
+  mov al, 0x44
+  xor di, di
+  stosb
+
+  mov dx, [color_bg]
   mov [color_draw_rect], dl
   call draw_rect             ; Erase at the player's previous position
 
@@ -60,6 +68,12 @@ game_loop:
   mov dl, [color_player]
   mov [color_draw_rect], dl
   call draw_rect             ; Draw the player graphic
+
+  mov ax, 0xb800
+  mov es, ax
+  mov al, 0xee
+  xor di, di
+  stosb
 
   cmp byte [is_running], 0   ; If still running (ESC key not pressed),
   jne game_loop              ; jump back to game_loop
