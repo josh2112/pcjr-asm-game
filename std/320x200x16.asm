@@ -150,4 +150,66 @@ blt_rect:
   ret 12
 
 
+; draw_icon( fb_dest, icon_ptr, icon_w, icon_h, x, y)
+; Copies icon data into the destination buffer at the specified position
+; NOTE: X and icon width must be even!
+; Args:
+;   bp+4 = fb_dest, bp+6 = icon_ptr,
+;   bp+8 = icon_w, bp+10 = icon_h, bp+12 = x, bp+14 = y
+draw_icon:
+  push bp
+  mov bp, sp
+
+  mov cx, [bp+10]
+  mov es, [bp+4]
+  mov si, [bp+6]
+
+.copyLine:
+  ; Compute which row number we're writing to in the framebuffer
+  mov ax, [bp+10] ; Start with icon height
+  sub ax, cx      ; Subtract countdown to give us icon row
+  add ax, [bp+14] ; Add Y location to icon row number
+  
+  ; Convert the row number to a bank number (BX) and row within that bank (AX)
+  mov bx, ax      ; Faster alternative to dividing AX by 4: shift
+  shr ax, 1       ; right twice for quotient, mask with 0b11 for
+  shr ax, 1       ; remainder. Now AX is the row within the bank
+  and bx, 0b11    ; BX = bank number (0-3)
+  
+  ; Convert bank number (BX) to a byte offset
+  push cx
+  mov cl, 13      ; Faster alternative to multiplying BX by the
+  shl bx, cl      ; bank width (0x2000): shift left by 13.
+
+  ; Calc byte index of pixel: DI = BX + (AX * 320 + x) / 2
+  push bx
+  mov bx, 320
+  push dx
+  mul bx           ; AX * 320
+  pop dx
+  add ax, [bp+12]  ; ... + x
+  shr ax, 1        ; ... / 2
+  pop bx
+  add ax, bx       ; BX + ...
+  mov di, ax
+
+  mov cx, [bp+8]
+  shr cx, 1        ; Because each byte encodes 2 pixels
+
+.copyByte:
+  mov al, [si]
+  test al, al
+  jz .afterCopyByte
+  mov [es:di], al
+.afterCopyByte:
+  inc si
+  inc di
+  loop .copyByte
+
+  pop cx
+  loop .copyLine
+
+  pop bp
+  ret 12
+
 %endif ; _320X200X16_ASM

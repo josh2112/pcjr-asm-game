@@ -10,6 +10,10 @@ section .data
 
   keyboardState: times 128 db 0
 
+section .bss
+
+  originalInt9h: resb 4
+
 section .text
 
 handle_int9h:
@@ -57,9 +61,9 @@ install_keyboard_handler:
   xor di, di
   mov es, di                        ; Set ES to 0
   mov dx, [es:9h*4]                 ; Copy the offset of the INT 9h handler
-  mov [oldInt9h], dx                ; Store it in oldInt9h
+  mov [originalInt9h], dx           ; Store it in oldInt9h
   mov dx, [es:9h*4+2]               ; Then copy the segment
-  mov [oldInt9h+2], dx              ; Store it in oldInt9h + 2
+  mov [originalInt9h+2], dx         ; Store it in oldInt9h + 2
   mov word [es:9h*4], handle_int9h  ; Install the new handle - first the offset,
   mov word [es:9h*4+2], cs          ; then the segment
   sti                               ; Reenable interrupts
@@ -71,9 +75,9 @@ restore_keyboard_handler:
   cli
   xor di, di
   mov es, di
-  mov dx, [oldInt9h]
+  mov dx, [originalInt9h]
   mov word [es:9h*4], dx
-  mov dx, [oldInt9h+2]
+  mov dx, [originalInt9h+2]
   mov word [es:9h*4+2], dx
   sti
   ret
