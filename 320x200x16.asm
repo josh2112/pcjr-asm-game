@@ -4,6 +4,7 @@
 %define _320X200X16_ASM
 
 ; Puts color index DL in the pair of pixels specified by BX,AX (x,y)
+; Clobbers AX, CX, DX
 putpixel:
   push dx         ; Save the color because we need DX for MUL and DIV
   mov cx, 4
@@ -33,18 +34,37 @@ putpixel:
   jc .setLow        ; If AX was odd, carry bit should be set from the right-shift. If so, set the low
                     ; nibble, otherwise set the high nibble
   .setHigh:
-    and al, 00fh    ; Clear the high nibble
+    and al, 0x0f    ; Clear the high nibble
     mov cl, 4
     shl dl, cl
     or al, dl       ; Set it from the color index in DL
     jmp .finish
 
   .setLow:
-    and al, 0f0h    ; Clear the low nibble
+    and al, 0xf0    ; Clear the low nibble
     or al, dl       ; Set it from the color index in DL
 
   .finish:
     mov [es:si], al  ; Push the updated pixel pair back into memory
     ret
+
+; Fills the framebuffer with the color indexed by the low nibble of DL
+cls:
+  ; Copy the low nibble of DL to the high nibble
+  and dl, 0x0f ; Clear the high nibble
+  mov dh, dl   ; Make a copy in DH
+  mov cl, 4
+  shl dh, cl   ; Shift DH left 4 bits (make the low nibble the high nibble)
+  or dl, dh    ; Combine the nibbles
+  mov dh, dl
+
+  mov ax, 0xb800
+  mov es, ax     ; Set ES to point to the framebuffer
+  xor di, di     ; Set DI to 0 (STOSW will copy to ES:DI)
+  mov ax, dx
+  mov cx, 0x4000 ; Fill 32KB (0x4000 16-bit words)
+  rep stosw      ;
+
+  ret
 
 %endif ; _320X200X16_ASM
