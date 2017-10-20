@@ -1,8 +1,9 @@
 ; stdio.asm: Routines for 8088 assembly that would be classified as "stdio"
-; in C, such as processing input
+; in C, such as processing input.
 
 ; Much like C/C++, these %ifndef/%define/%endif keep the file from being
-; accidentally included multiple times
+; accidentally included multiple times.
+
 %ifndef STDIO_ASM
 %define STDIO_ASM
 
