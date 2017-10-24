@@ -17,11 +17,12 @@ str_crlf: db 0xa, 0xd, '$'
 
 color_bg: db 1
 color_player: db 10
-color_draw_rect: db 0
 
 is_running: db 1
 player_x: dw 160
 player_y: dw 100
+player_w: dw 8
+player_h: dw 8
 
 keyboardState: times 128 db 0
 
@@ -59,14 +60,20 @@ game_loop:
   xor di, di
   stosb
 
-  mov dx, [color_bg]
-  mov [color_draw_rect], dl
+  push word [color_bg]
+  push word [player_h]
+  push word [player_w]
+  push word [player_y]
+  push word [player_x]
   call draw_rect             ; Erase at the player's previous position
 
   call process_key           ; Do something with the key
 
-  mov dl, [color_player]
-  mov [color_draw_rect], dl
+  push word [color_player]
+  push word [player_h]
+  push word [player_w]
+  push word [player_y]
+  push word [player_x]
   call draw_rect             ; Draw the player graphic
 
   mov ax, 0xb800
