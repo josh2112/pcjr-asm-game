@@ -1,7 +1,7 @@
-; renderer.asm: Rendering routines for our game
+; video.asm: Rendering routines for our game
 
-%ifndef RENDERER_ASM
-%define RENDERER_ASM
+%ifndef VIDEO_ASM
+%define VIDEO_ASM
 
 
 ; Wait for port 0x3da bit 3 to go high, meaning that we are in
@@ -18,4 +18,4 @@ waitForRetrace:
   jz .loop2    ; right at the beginning.
   ret
 
-%endif ; RENDERER_ASM
+%endif ; VIDEO_ASM

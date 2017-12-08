@@ -159,50 +159,50 @@ draw_icon:
   
   mov cx, [bp+8]   ; This CX will count down the rows
 
-.copyLine:
-  ; Compute which row number we're writing to in the framebuffer
-  mov ax, [bp+8] ; Start with icon height
-  sub ax, cx      ; Subtract countdown to give us icon row
-  add ax, [bp+12] ; Add Y location to icon row number
-  
-  ; Convert the row number to a bank number (BX) and row within that bank (AX)
-  mov bx, ax      ; Faster alternative to dividing AX by 4: shift
-  shr ax, 1       ; right twice for quotient, mask with 0b11 for
-  shr ax, 1       ; remainder. Now AX is the row within the bank
-  and bx, 0b11    ; BX = bank number (0-3)
-  
-  ; Convert bank number (BX) to a byte offset
-  push cx
-  mov cl, 13      ; Faster alternative to multiplying BX by the
-  shl bx, cl      ; bank width (0x2000): shift left by 13.
+  .copyLine:
+    ; Compute which row number we're writing to in the framebuffer
+    mov ax, [bp+8] ; Start with icon height
+    sub ax, cx      ; Subtract countdown to give us icon row
+    add ax, [bp+12] ; Add Y location to icon row number
+    
+    ; Convert the row number to a bank number (BX) and row within that bank (AX)
+    mov bx, ax      ; Faster alternative to dividing AX by 4: shift
+    shr ax, 1       ; right twice for quotient, mask with 0b11 for
+    shr ax, 1       ; remainder. Now AX is the row within the bank
+    and bx, 0b11    ; BX = bank number (0-3)
+    
+    ; Convert bank number (BX) to a byte offset
+    push cx
+    mov cl, 13      ; Faster alternative to multiplying BX by the
+    shl bx, cl      ; bank width (0x2000): shift left by 13.
 
-  ; Calc byte index of pixel: DI = BX + (AX * 320 + x) / 2
-  push bx
-  mov bx, 320
-  push dx
-  mul bx           ; AX * 320
-  pop dx
-  add ax, [bp+10]  ; ... + x
-  shr ax, 1        ; ... / 2
-  pop bx
-  add ax, bx       ; BX + ...
-  mov di, ax
+    ; Calc byte index of pixel: DI = BX + (AX * 320 + x) / 2
+    push bx
+    mov bx, 320
+    push dx
+    mul bx           ; AX * 320
+    pop dx
+    add ax, [bp+10]  ; ... + x
+    shr ax, 1        ; ... / 2
+    pop bx
+    add ax, bx       ; BX + ...
+    mov di, ax
 
-  mov cx, [bp+6]
-  shr cx, 1        ; Because each byte encodes 2 pixels
+    mov cx, [bp+6]
+    shr cx, 1        ; Because each byte encodes 2 pixels
 
-  .copyByte:
-    mov al, [si]
-    test al, al
-    jz .afterCopyByte
-    mov [es:di], al
-    .afterCopyByte:
-      inc si
-      inc di
-      loop .copyByte
+    .copyByte:
+      mov al, [si]
+      test al, al
+      jz .afterCopyByte
+      mov [es:di], al
+      .afterCopyByte:
+        inc si
+        inc di
+        loop .copyByte
 
-    pop cx
-    loop .copyLine
+      pop cx
+      loop .copyLine
 
   pop bp
   ret 10

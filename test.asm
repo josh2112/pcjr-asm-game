@@ -125,6 +125,6 @@ int 21h
 
 %include 'std/stdio.mac'
 %include 'std/stdlib.asm'
+%include 'std/video.asm'
 %include 'std/320x200x16.asm'
 %include 'input.asm'
-%include 'renderer.asm'
