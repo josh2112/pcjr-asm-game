@@ -1,0 +1,17 @@
+00000-0FFFF: base 64k memory
+10000-1FFFF: 64k memory expansion
+
+18000 - 1FFFF: last 32k of base memory -- is this video page 3?
+
+Video pages: 16k chunks numbered from 0 starting at 00000, 04000, 08000, 0C000, 10000, 14000, 18000, 1C000
+ - Pages 1 and 2 are reserved
+ - 32k modes use 2 pages, so valid pages are 2, 4, 6
+ - Page 6 (0x18000 to 0x1ffff) seems to be initial CRT page
+
+0x3A080: This appears to be the whole frame but with different colors.  Bonus: Skeleton lines drawn in?
+
+
+
+Resources:
+https://www.atarimagazines.com/compute/issue57/kings_quest.html
+https://computerarchive.org/files/computer/magazines/jrNewsletter/1989s/September%20October%201989(s).pdf

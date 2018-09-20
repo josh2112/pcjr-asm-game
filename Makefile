@@ -2,7 +2,7 @@
 # Makefile for PCjr ASM Game project
 #
 ifeq ($(OS),Windows_NT)
-	NASM="$(USERPROFILE)\AppData\Local\NASM\nasm"
+	NASM="$(USERPROFILE)\AppData\Local\bin\NASM\nasm"
 	DOSBOX="tools\EmuCR-Dosbox-r4059\dosbox"
 	RM=cmd \/C del
 else

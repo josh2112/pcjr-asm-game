@@ -9,9 +9,9 @@
 
 section .data
 
-  FRAMEBUFFER_SEG: dw 0x1800
-  BACKGROUND_SEG: dw 0x1000
-  COMPOSITOR_SEG: dw 0x800
+  FRAMEBUFFER_SEG: dw 0x1800  ; Page 6-7
+  BACKGROUND_SEG: dw 0x1000   ; Page 4-5
+  COMPOSITOR_SEG: dw 0x800    ; Page 2-3
   ; 0x3000, 0x3800 are two other available 32kb chunks
  
   color_bg: db 1
@@ -60,8 +60,12 @@ int 10h                      ; Call INT10h fn 0x0f which will store the current 
 mov [originalVideoMode], al  ; Store it into the byte pointed to by originalVideoMode.
 
 ; Change the video mode to Mode 9 (320x200, 16 colors)
-mov ax, 0x0009               ; AH = 0x00 (set video mode), AL <- 9 (new mode)
+mov ax, 0x0009               ; AH = 0x00 (set video mode), AL = 0x09 (new mode)
 int 10h                      ; Call INT10h fn 0 to change the video mode
+
+mov ax, 0x0582               ; AH = 0x05 (CPU/CRT page registers), AL = 0x82 (set CRT page register)
+mov bx, 0x0600               ; BH = Page 6, matching our FRAMEBUFFER_SEG
+int 10h                      ; Call INT10h fn 0x05 to set CRT page register to 6
 
 ; Fill all buffers with the initial background color
 mov dl, [color_bg]
@@ -96,8 +100,7 @@ game_loop:
 
   call bound_player
   
-  call waitForRetrace
-
+  ; 1) Copy rectangle covering player's previous location from background to compositor
   push word [player_h]
   push word [player_w]
   push word [player_y_prev]
@@ -106,6 +109,7 @@ game_loop:
   push word [COMPOSITOR_SEG]
   call blt_rect
 
+  ; 2) Draw the player icon in its new location in the compositor
   push word [player_y]
   push word [player_x]
   push word [player_h]
@@ -144,6 +148,7 @@ game_loop:
   .next2:
   add dx, [player_h]
   
+  ; 3) Copy a rectangle covering both player's previous and current locations from compositor to framebuffer
   push dx
   push cx
   push bx
