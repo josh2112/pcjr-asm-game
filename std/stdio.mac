@@ -1,10 +1,5 @@
 ; stdio.mac: Input/output routines for 8088 assembly
-;
-; Expects the following initialized data:
-; str_crlf: db 0dh, 0ah, '$'
 
-; Much like C/C++, these %ifndef/%define/%endif keep the file from being
-; accidentally included multiple times
 %ifndef STDIO_MAC
 %define STDIO_MAC
 

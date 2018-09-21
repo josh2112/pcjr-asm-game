@@ -9,6 +9,8 @@
 
 section .data
 
+  text_prompt: db "> $"
+
   FRAMEBUFFER_SEG: dw 0x1800  ; Page 6-7
   BACKGROUND_SEG: dw 0x1000   ; Page 4-5
   COMPOSITOR_SEG: dw 0x800    ; Page 2-3
@@ -156,6 +158,12 @@ game_loop:
   push word [COMPOSITOR_SEG]
   push word [FRAMEBUFFER_SEG]
   call blt_rect
+
+  xor bx,bx         ; Set page number for cursor move (0 for graphics modes)
+  mov dx, 0x1800    ; line 24 (0x18), col 0 (0x0)
+  mov ah, 2         ; Call "set cursor"
+  int 10h
+  print text_prompt
 
   jmp game_loop
 

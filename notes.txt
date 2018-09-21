@@ -6,12 +6,36 @@
 Video pages: 16k chunks numbered from 0 starting at 00000, 04000, 08000, 0C000, 10000, 14000, 18000, 1C000
  - Pages 1 and 2 are reserved
  - 32k modes use 2 pages, so valid pages are 2, 4, 6
- - Page 6 (0x18000 to 0x1ffff) seems to be initial CRT page
+ - Page 6 (0x18000 to 0x1FFFF) seems to be initial CRT page
 
 0x3A080: This appears to be the whole frame but with different colors.  Bonus: Skeleton lines drawn in?
 
-
-
 Resources:
+http://stanislavs.org/helppc/int_10.html
 https://www.atarimagazines.com/compute/issue57/kings_quest.html
 https://computerarchive.org/files/computer/magazines/jrNewsletter/1989s/September%20October%201989(s).pdf
+
+
+Rendering scheme
+----------------
+Scene resolution is actually 160x200, but each horizontal pixel is doubled to make 320x200
+ - This is convenient because 320x200x16 encodes 2 pixels per byte.
+
+Base page (0x8000): Contains color data interleaved with priority. Each byte contains color (high byte) and priority (low byte) for the next 2 pixels.
+ - pri/skel (low byte) is 0 (for skeleton line) or 1-15 (for priority)
+ - Also contains skeleton -- but how?
+
+Compositor page (0x10000): Buffer area for new frame to be drawn. When drawing is complete this area is copied to the framebuffer.
+
+Framebuffer page (0x18000): Video memory.
+
+Each 'room' is 316x166 with a 2-pixel border on each side and a 1-pixel border on top and bottom.
+ - The remaining 200-166-2 = 32 vertical pixels are for 4 rows of text at the bottom
+
+Rendering loop - to be performed each time a sprite moves:
+ - Erase all sprites in compositor:
+   - Copy rectangles of data covering the previous location of each sprite from the base to the compositor.
+ - Draw the sprites, in order of priority, in their new locations in the compositor. For each sprite pixel:
+   - If sprite pixel is transparent or has a higher priority than corresponding base pixel, skip it.
+   - Else, copy it over. 
+ - Compute bounding rectangles of sprite previous and current location for each sprite; copy each from compositor to framebuffer.
