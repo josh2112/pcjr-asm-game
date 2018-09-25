@@ -28,7 +28,7 @@ handle_int9h:
   test bl, 0x80       ; If high bit is set it's a key release
   jnz .keyReleased
 
-  ; NOTE: Using DS: prefix for keyboard state here because no telling what
+  ; NOTE: Using CS: prefix for keyboard state here because no telling what
   ; DS will be set to when this is called!
   .keyPressed:
     mov byte [cs:keyboardState+bx], 1  ; Turn on that key in the buffer
@@ -82,5 +82,37 @@ restore_keyboard_handler:
   mov word [es:9h*4+2], dx
   sti
   ret
+
+
+; read_file( path, size, destination )
+; Reads bytes from a file into a buffer.
+; Args:
+;   bp+4 = path, bp+6 = size,
+;   bp+8 = destination
+read_file:
+  push bp
+  mov bp, sp
+
+  mov ax, 0x3d00
+  mov dx, [bp+4]
+  int 21h
+
+  mov bx, ax
+  mov ax, 0x3f00
+  mov cx, [bp+6]
+  xor dx, dx
+  push ds
+  mov di, [bp+8]
+  mov ds, di
+  int 21h
+  pop ds
+
+  mov ax, 0x3e00
+  int 21h
+
+  pop bp
+  ret 6
+
+
 
 %endif ; STDIO_ASM

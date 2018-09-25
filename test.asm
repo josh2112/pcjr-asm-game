@@ -11,12 +11,10 @@ section .data
 
   text_prompt: db "> $"
 
-  FRAMEBUFFER_SEG: dw 0x1800  ; Page 6-7
-  BACKGROUND_SEG: dw 0x1000   ; Page 4-5
-  COMPOSITOR_SEG: dw 0x800    ; Page 2-3
-  ; 0x3000, 0x3800 are two other available 32kb chunks
- 
+  path_room1: db "room1.bin", 0
+
   color_bg: db 1
+  size_room_bytes: dw 27040   ; 169 rows of 160 bytes
 
   is_running: db 1
 
@@ -69,21 +67,25 @@ mov ax, 0x0582               ; AH = 0x05 (CPU/CRT page registers), AL = 0x82 (se
 mov bx, 0x0600               ; BH = Page 6, matching our FRAMEBUFFER_SEG
 int 10h                      ; Call INT10h fn 0x05 to set CRT page register to 6
 
-; Fill all buffers with the initial background color
-mov dl, [color_bg]
-mov di, [BACKGROUND_SEG]
-mov es, di
-call fill_page
-mov di, [COMPOSITOR_SEG]
-mov es, di
-call fill_page
-mov di, [FRAMEBUFFER_SEG]
-mov es, di
-call fill_page
 
+push word [BACKGROUND_SEG]
+push word [size_room_bytes]
+mov ax, path_room1
+push ax
+call read_file  ; read "room1.bin" into BACKGROUND_SEG
+
+call blt_background_to_compositor
+
+mov ax, 200
+push ax
+mov ax, 320
+push ax
+xor ax, ax
+push ax
+push ax
+call blt_compositor_to_framebuffer
 
 call install_keyboard_handler
-
 
 game_loop:
 
@@ -109,7 +111,7 @@ game_loop:
   push word [player_x_prev]
   push word [BACKGROUND_SEG]
   push word [COMPOSITOR_SEG]
-  call blt_rect
+  call blt_rect   ; TODO: Need to use blt_compositor_to_framebuffer() but need to rework it to take a rectangle!
 
   ; 2) Draw the player icon in its new location in the compositor
   push word [player_y]
@@ -155,11 +157,9 @@ game_loop:
   push cx
   push bx
   push ax
-  push word [COMPOSITOR_SEG]
-  push word [FRAMEBUFFER_SEG]
-  call blt_rect
+  call blt_compositor_to_framebuffer
 
-  xor bx,bx         ; Set page number for cursor move (0 for graphics modes)
+  xor bx, bx        ; Set page number for cursor move (0 for graphics modes)
   mov dx, 0x1800    ; line 24 (0x18), col 0 (0x0)
   mov ah, 2         ; Call "set cursor"
   int 10h

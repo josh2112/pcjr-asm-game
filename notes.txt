@@ -21,9 +21,8 @@ Rendering scheme
 Scene resolution is actually 160x200, but each horizontal pixel is doubled to make 320x200
  - This is convenient because 320x200x16 encodes 2 pixels per byte.
 
-Base page (0x8000): Contains color data interleaved with priority. Each byte contains color (high byte) and priority (low byte) for the next 2 pixels.
- - pri/skel (low byte) is 0 (for skeleton line) or 1-15 (for priority)
- - Also contains skeleton -- but how?
+Base page (0x8000): Contains color data interleaved with priority. Each byte contains priority (high byte) and color (low byte) for the next 2 pixels.
+ - pri/skel (high byte) is 0 (for skeleton line) or 1-15 (for priority)
 
 Compositor page (0x10000): Buffer area for new frame to be drawn. When drawing is complete this area is copied to the framebuffer.
 

@@ -3,51 +3,13 @@
 %ifndef _320X200X16_ASM
 %define _320X200X16_ASM
 
+section .data
+
+  BACKGROUND_SEG: dw 0x800    ; Page 2-3
+  COMPOSITOR_SEG: dw 0x1000   ; Page 4-5
+  FRAMEBUFFER_SEG: dw 0x1800  ; Page 6-7
+
 section .text
-
-; Puts color index DL in the pair of pixels specified by BX,AX (x,y)
-; Clobbers AX, CX, DX
-putpixel:
-  push dx         ; Save the color because we need DX for MUL and DIV
-  mov dx, ax      ; Faster alternative to dividing AX by 4: shift
-  shr dx, 1       ; right twice for quotient, mask with 0b11 for
-  shr dx, 1       ; remainder.
-  and ax, 0b11    ; AX = bank number (0-3), DX = row within bank
-
-  ; Set the segment address to the right bank (0xB8000 + bank start)
-  mov cl, 9       ; Faster alternative to multiplying AX by the
-  shl ax, cl      ; bank width (0x200): shift left by 9.
-  add ax, [FRAMEBUFFER_SEG]  ; Offset by start of video memory
-  mov es, ax      ; ES = absolute start-of-bank address
-
-  mov ax, dx
-  ; Now BX is the pixel column (x) and AX is the row (y) within the bank
-
-  ; Calc byte index of pixel: AX = (AX * 320 + BX) / 2
-  mov cx, 320
-  mul cx
-  add ax, bx
-  shr ax, 1
-
-  mov si, ax        ; Put byte index in string-source register
-  mov al, [es:si]   ; Pull the pixel pair out into AL
-
-  pop dx            ; Get our color back in DX
-  jc .setLow        ; If AX was odd, carry bit should be set from the right-shift. If so, set the low
-                    ; nibble, otherwise set the high nibble
-  .setHigh:
-    and al, 0x0f    ; Clear the high nibble
-    mov cl, 4
-    shl dl, cl
-    or al, dl       ; Set it from the color index in DL
-    mov [es:si], al  ; Push the updated pixel pair back into memory
-    ret
-
-  .setLow:
-    and al, 0xf0    ; Clear the low nibble
-    or al, dl       ; Set it from the color index in DL
-    mov [es:si], al  ; Push the updated pixel pair back into memory
-    ret
 
 ; Replicates the low nibble of DL four times in AX.
 nibble_to_word:
@@ -148,6 +110,98 @@ blt_rect:
   mov sp, bp      ; Destroy locals
   pop bp
   ret 12
+
+
+; blt_background_to_compositor()
+; Copies all pixels from the background buffer to the compositor,
+; overwriting the high byte (priority) with the low byte (color)
+blt_background_to_compositor:
+  push ds            ; Set DS to source and
+  push es            ; ES to destination
+  mov es, [COMPOSITOR_SEG]
+  mov ds, [BACKGROUND_SEG]
+  xor si, si
+
+  mov cx, 27040      ; Number of bytes to copy
+  
+.copyByte:
+  push cx
+  mov dl, [ds:si]
+  call nibble_to_word
+  mov byte [es:si], al
+  inc si
+  pop cx
+  loop .copyByte
+
+  pop es          ; Restore our segment registers
+  pop ds
+  ret
+
+
+; blt_compositor_to_framebuffer( x, y, w, h )
+; Copies a rectangle of compositor data to the framebuffer, doing interleaving.
+; Args:
+;   bp+4 = x, bp+6 = y, bp+8 = w, bp+10 = h
+blt_compositor_to_framebuffer:
+  push bp
+  mov bp, sp
+
+  push ds            ; Set DS to source and
+  push es            ; ES to destination
+  mov es, [FRAMEBUFFER_SEG]
+  mov ds, [COMPOSITOR_SEG]
+
+  mov cx, [bp+10]   ; # lines to copy
+
+.copyLine:
+  ; Compute which row number we're writing to in the framebuffer
+  mov ax, [bp+10] ; Start with rect height
+  sub ax, cx      ; Subtract countdown to give us rect row
+  add ax, [bp+6] ; Add Y location to rect row number
+  
+  ; Compute starting location for this line in the compositor
+  ; SI = (AX * 320 + x) / 2
+  push ax
+  mov bx, 320
+  mul bx           ; AX *= 320
+  add ax, [bp+4]   ; ... + x
+  shr ax, 1        ; ... / 2
+  mov si, ax
+  pop ax
+
+  ; Convert the row number to a bank number (BX) and row within that bank (AX)
+  mov bx, ax      ; Faster alternative to dividing AX by 4: shift
+  shr ax, 1       ; right twice for quotient, mask with 0b11 for
+  shr ax, 1       ; remainder. Now AX is the row within the bank
+  and bx, 0b11    ; BX = bank number (0-3)
+  
+  ; Convert bank number (BX) to a byte offset
+  push cx
+  mov cl, 13      ; Faster alternative to multiplying BX by the
+  shl bx, cl      ; bank width (0x2000): shift left by 13.
+
+  ; Calc byte index of pixel: DI = BX + (AX * 320 + x) / 2
+  push bx
+  mov bx, 320
+  mul bx           ; AX =* 320
+  add ax, [bp+4]   ; ... + x
+  shr ax, 1        ; ... / 2
+  pop bx
+  add ax, bx       ; BX + ...
+  mov di, ax
+
+  mov cx, [bp+8]
+  shr cx, 1        ; Because each byte encodes 2 pixels
+  rep movsb
+
+  pop cx
+  loop .copyLine
+
+  pop es
+  pop ds
+
+  pop bp
+  ret 8
 
 
 ; draw_icon( fb_dest, icon_ptr, icon_w, icon_h, x, y)

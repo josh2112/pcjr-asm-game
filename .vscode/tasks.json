@@ -4,13 +4,31 @@
     "version": "2.0.0",
     "tasks": [
         {
-            "taskName": "Build and run",
+            "label": "Build and run",
             "type": "shell",
             "command": "make run",
             "group": {
                 "kind": "build",
                 "isDefault": true
             },
+            "problemMatcher": {
+                "owner": "asm",
+                "pattern": {
+                    // NASM problem output is very gcc-like, just without the column number. Example:
+                    // std/stdio.asm:40: error: invalid combination of opcode and operands
+                    "regexp": "^(.*):(\\d+):\\s+(warning|error):\\s+(.*)$",
+                    "file": 1,
+                    "line": 2,
+                    "severity": 3,
+                    "message": 4
+                }
+            }
+        },
+        {
+            "label": "Build and debug",
+            "type": "shell",
+            "command": "make debug",
+            "group": "build",
             "problemMatcher": {
                 "owner": "asm",
                 "pattern": {

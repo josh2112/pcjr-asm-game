@@ -4,6 +4,7 @@
 ifeq ($(OS),Windows_NT)
 	NASM="$(USERPROFILE)\AppData\Local\bin\NASM\nasm"
 	DOSBOX="tools\EmuCR-Dosbox-r4059\dosbox"
+	DOSBOX_DBG="..\dosbox-svn\dosbox\visualc_net\Release\dosbox"
 	RM=cmd \/C del
 else
 	RM=rm
@@ -32,6 +33,9 @@ $(TARGET.COM): $(TARGET).asm $(DEPS)
 
 run: $(TARGET.COM)
 	$(DOSBOX) $(DOSBOX_OPTS) $^
+
+debug: $(TARGET.COM)
+	$(DOSBOX_DBG) $(DOSBOX_OPTS) $^
 
 clean:
 	$(RM) $(TARGET.COM)
