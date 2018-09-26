@@ -112,34 +112,61 @@ blt_rect:
   ret 12
 
 
-; blt_background_to_compositor()
-; Copies all pixels from the background buffer to the compositor,
-; overwriting the high byte (priority) with the low byte (color)
+; blt_background_to_compositor( x, y, w, h )
+; Copies a rectangle of background buffer data to the compositor,
+; overwriting the high byte (priority) with the low byte (color).
+; Args:
+;   bp+4 = x, bp+6 = y, bp+8 = w, bp+10 = h
 blt_background_to_compositor:
+  push bp
+  mov bp, sp
+
   push ds            ; Set DS to source and
   push es            ; ES to destination
   mov es, [COMPOSITOR_SEG]
   mov ds, [BACKGROUND_SEG]
-  xor si, si
 
-  mov cx, 27040      ; Number of bytes to copy
+  mov cx, [bp+10]   ; # lines to copy
   
+.copyLine:
+  ; Compute which row number we're writing to
+  mov ax, [bp+10] ; Start with rect height
+  sub ax, cx      ; Subtract countdown to give us rect row
+  add ax, [bp+6]  ; Add Y location to rect row number
+  
+  ; Compute starting byte offset for this location
+  ; DI = (AX * 320 + x) / 2
+  mov bx, 320
+  mul bx           ; AX *= 320
+  add ax, [bp+4]   ; ... + x
+  shr ax, 1        ; ... / 2
+  mov di, ax
+
+  push cx
+  mov cx, [bp+8]
+  shr cx, 1        ; Because each byte encodes 2 pixels
+
 .copyByte:
   push cx
-  mov dl, [ds:si]
+  mov dl, [ds:di]
   call nibble_to_word
-  mov byte [es:si], al
-  inc si
+  mov byte [es:di], al
+  inc di
   pop cx
   loop .copyByte
 
+  pop cx
+  loop .copyLine
+
   pop es          ; Restore our segment registers
   pop ds
-  ret
+  pop bp
+  ret 8
 
 
 ; blt_compositor_to_framebuffer( x, y, w, h )
-; Copies a rectangle of compositor data to the framebuffer, doing interleaving.
+; Copies a rectangle of compositor data to the framebuffer, interleaving
+; the lines into 4 scanline banks as required by the 320x200x16 mode.
 ; Args:
 ;   bp+4 = x, bp+6 = y, bp+8 = w, bp+10 = h
 blt_compositor_to_framebuffer:
@@ -183,7 +210,7 @@ blt_compositor_to_framebuffer:
   ; Calc byte index of pixel: DI = BX + (AX * 320 + x) / 2
   push bx
   mov bx, 320
-  mul bx           ; AX =* 320
+  mul bx           ; AX *= 320
   add ax, [bp+4]   ; ... + x
   shr ax, 1        ; ... / 2
   pop bx
@@ -199,62 +226,47 @@ blt_compositor_to_framebuffer:
 
   pop es
   pop ds
-
   pop bp
   ret 8
 
 
-; draw_icon( fb_dest, icon_ptr, icon_w, icon_h, x, y)
-; Copies icon data into the destination buffer at the specified position
-; NOTE: X and icon width must be even!
+; draw_icon( icon_ptr, icon_w, icon_h, x, y)
+; Copies icon data into the compositor at the specified position
 ; Args:
-;   bp+4 = fb_dest, bp+6 = icon_ptr,
-;   bp+8 = icon_w, bp+10 = icon_h, bp+12 = x, bp+14 = y
+;   bp+4 = icon_ptr, bp+6 = icon_w, bp+8 = icon_h, bp+10 = x, bp+12 = y
 draw_icon:
   push bp
   mov bp, sp
-
-  mov cx, [bp+10]
-  mov es, [bp+4]
-  mov si, [bp+6]
+ 
+  push es            ; Set ES to destination
+  mov es, [COMPOSITOR_SEG]
+ 
+  mov si, [bp+4]
+  mov cx, [bp+8]
 
 .copyLine:
-  ; Compute which row number we're writing to in the framebuffer
-  mov ax, [bp+10] ; Start with icon height
+  ; Compute which row number we're writing to
+  mov ax, [bp+8] ; Start with icon height
   sub ax, cx      ; Subtract countdown to give us icon row
-  add ax, [bp+14] ; Add Y location to icon row number
+  add ax, [bp+12] ; Add Y location to icon row number
   
-  ; Convert the row number to a bank number (BX) and row within that bank (AX)
-  mov bx, ax      ; Faster alternative to dividing AX by 4: shift
-  shr ax, 1       ; right twice for quotient, mask with 0b11 for
-  shr ax, 1       ; remainder. Now AX is the row within the bank
-  and bx, 0b11    ; BX = bank number (0-3)
-  
-  ; Convert bank number (BX) to a byte offset
-  push cx
-  mov cl, 13      ; Faster alternative to multiplying BX by the
-  shl bx, cl      ; bank width (0x2000): shift left by 13.
-
-  ; Calc byte index of pixel: DI = BX + (AX * 320 + x) / 2
-  push bx
+  ; Compute starting byte offset for this location in compositor
+  ; DI = (AX * 320 + x) / 2
   mov bx, 320
-  push dx
-  mul bx           ; AX * 320
-  pop dx
-  add ax, [bp+12]  ; ... + x
+  mul bx           ; AX *= 320
+  add ax, [bp+10]   ; ... + x
   shr ax, 1        ; ... / 2
-  pop bx
-  add ax, bx       ; BX + ...
   mov di, ax
 
-  mov cx, [bp+8]
+  push cx
+  mov cx, [bp+6]
   shr cx, 1        ; Because each byte encodes 2 pixels
 
 .copyByte:
-  mov al, [si]
+  mov al, [ds:si]
   test al, al
   jz .afterCopyByte
-  mov [es:di], al
+  mov byte [es:di], al
 .afterCopyByte:
   inc si
   inc di
@@ -263,7 +275,8 @@ draw_icon:
   pop cx
   loop .copyLine
 
+  pop es
   pop bp
-  ret 12
+  ret 10
 
 %endif ; _320X200X16_ASM

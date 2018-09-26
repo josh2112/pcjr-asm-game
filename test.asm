@@ -10,6 +10,7 @@
 section .data
 
   text_prompt: db "> $"
+  text_comma: db ", $"
 
   path_room1: db "room1.bin", 0
 
@@ -74,6 +75,13 @@ mov ax, path_room1
 push ax
 call read_file  ; read "room1.bin" into BACKGROUND_SEG
 
+mov ax, 200
+push ax
+mov ax, 320
+push ax
+xor ax, ax
+push ax
+push ax
 call blt_background_to_compositor
 
 mov ax, 200
@@ -109,9 +117,7 @@ game_loop:
   push word [player_w]
   push word [player_y_prev]
   push word [player_x_prev]
-  push word [BACKGROUND_SEG]
-  push word [COMPOSITOR_SEG]
-  call blt_rect   ; TODO: Need to use blt_compositor_to_framebuffer() but need to rework it to take a rectangle!
+  call blt_background_to_compositor
 
   ; 2) Draw the player icon in its new location in the compositor
   push word [player_y]
@@ -120,8 +126,7 @@ game_loop:
   push word [player_w]
   mov ax, player_icon
   push ax
-  push word [COMPOSITOR_SEG]
-  call draw_icon             ; Draw the player icon
+  call draw_icon
 
   ; Combine player previous and current rect:
   ; AX = x_prev - x

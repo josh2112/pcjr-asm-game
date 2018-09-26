@@ -30,9 +30,11 @@ process_keys:
     cmp byte [keyboardState+KEY_LEFT], 1
     jne .testRight
     dec word [player_x]
+    dec word [player_x]
   .testRight:
     cmp byte [keyboardState+KEY_RIGHT], 1
     jne .done
+    inc word [player_x]
     inc word [player_x]
   .done:
     ret
