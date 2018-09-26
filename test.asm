@@ -9,13 +9,14 @@
 
 section .data
 
+  dbg: dw 0
+
   text_prompt: db "> $"
   text_comma: db ", $"
 
   path_room1: db "room1.bin", 0
 
   color_bg: db 1
-  size_room_bytes: dw 27040   ; 169 rows of 160 bytes
 
   is_running: db 1
 
@@ -70,23 +71,28 @@ int 10h                      ; Call INT10h fn 0x05 to set CRT page register to 6
 
 
 push word [BACKGROUND_SEG]
-push word [size_room_bytes]
+mov ax, room_width_px
+mov bx, room_height_px
+mul bx
+;shr ax, 1
+push ax
+mov [dbg], ax
 mov ax, path_room1
 push ax
 call read_file  ; read "room1.bin" into BACKGROUND_SEG
 
-mov ax, 200
+mov ax, [room_height_px]
 push ax
-mov ax, 320
+mov ax, [room_width_px]
 push ax
 xor ax, ax
 push ax
 push ax
 call blt_background_to_compositor
 
-mov ax, 200
+mov ax, [room_height_px]
 push ax
-mov ax, 320
+mov ax, [room_width_px]
 push ax
 xor ax, ax
 push ax
@@ -170,6 +176,9 @@ game_loop:
   int 10h
   print text_prompt
 
+  intToString buf16, [dbg]
+  print buf16
+
   jmp game_loop
 
 
@@ -199,7 +208,7 @@ bound_player:
   jge .next
   mov word [player_x], 0
   .next:
-    mov ax, 320
+    mov ax, [room_width_px]
     sub ax, [player_w]
     cmp word [player_x], ax
     jle .next2
@@ -209,7 +218,7 @@ bound_player:
     jge .next3
     mov word [player_y], 0
   .next3:
-    mov ax, 200
+    mov ax, [room_height_px]
     sub ax, [player_h]
     cmp word [player_y], ax
     jle .done

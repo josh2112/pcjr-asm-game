@@ -9,6 +9,11 @@ section .data
   COMPOSITOR_SEG: dw 0x1000   ; Page 4-5
   FRAMEBUFFER_SEG: dw 0x1800  ; Page 6-7
 
+  room_width_px: dw 320
+  room_height_px: db 169
+  ;size_room_bytes: dw 27040   ; 169 rows of 160 bytes
+
+
 section .text
 
 ; Replicates the low nibble of DL four times in AX.
@@ -264,8 +269,21 @@ draw_icon:
 
 .copyByte:
   mov al, [ds:si]
+  ; If sprite pixel is transparent, skip it.
   test al, al
   jz .afterCopyByte
+  ; If sprite has a lower priority than corresponding base pixel, skip it.
+  push es
+  push cx
+  mov es, [BACKGROUND_SEG]
+  mov bl, [es:di]
+  mov cl, 4
+  shr bl, cl
+  pop cx
+  pop es
+  cmp bl, 8
+  jg .afterCopyByte
+
   mov byte [es:di], al
 .afterCopyByte:
   inc si
