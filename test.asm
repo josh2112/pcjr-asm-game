@@ -16,18 +16,14 @@ section .data
 
   path_room1: db "room1.bin", 0
 
-  color_bg: db 1
-
   is_running: db 1
 
   player_x: dw 160
   player_y: dw 100
-  player_w: dw 14
-  player_h: dw 16
   player_x_prev: dw 160
   player_y_prev: dw 100
 
-  player_icon:
+  player_icon: dw 14, 16
     db 000h, 000h, 0eeh, 0eeh, 0eeh, 000h, 000h ; 1
     db 000h, 000h, 088h, 0eeh, 088h, 000h, 000h ; 2
     db 000h, 000h, 0eeh, 0eeh, 0eeh, 000h, 000h ; 3
@@ -71,10 +67,10 @@ int 10h                      ; Call INT10h fn 0x05 to set CRT page register to 6
 
 
 push word [BACKGROUND_SEG]
-mov ax, room_width_px
-mov bx, room_height_px
+mov ax, [room_width_px]
+mov bx, [room_height_px]
 mul bx
-;shr ax, 1
+shr ax, 1
 push ax
 mov [dbg], ax
 mov ax, path_room1
@@ -119,8 +115,8 @@ game_loop:
   call bound_player
   
   ; 1) Copy rectangle covering player's previous location from background to compositor
-  push word [player_h]
-  push word [player_w]
+  push word [player_icon+2]
+  push word [player_icon+0]
   push word [player_y_prev]
   push word [player_x_prev]
   call blt_background_to_compositor
@@ -128,23 +124,15 @@ game_loop:
   ; 2) Draw the player icon in its new location in the compositor
   push word [player_y]
   push word [player_x]
-  push word [player_h]
-  push word [player_w]
+  mov ax, [player_y]
+  add ax, [player_icon+2]
+  call ypos_to_priority
+  push ax
   mov ax, player_icon
   push ax
   call draw_icon
 
   ; Combine player previous and current rect:
-  ; AX = x_prev - x
-  ; if AX > 0, X = x
-  ; else, X = x_prev
-  ; W = W + AX
-  ;
-  ; BX = y_prev - y
-  ; if BX > 0, Y = y
-  ; else, Y = y_prev
-  ; H = H + BX
-
   mov ax, [player_x]
   mov cx, [player_x_prev]
   sub cx, ax
@@ -152,7 +140,7 @@ game_loop:
     mov ax, [player_x_prev]
     neg cx
   .next1:
-  add cx, [player_w]
+  add cx, [player_icon+0]
 
   mov bx, [player_y]
   mov dx, [player_y_prev]
@@ -161,7 +149,7 @@ game_loop:
     mov bx, [player_y_prev]
     neg dx
   .next2:
-  add dx, [player_h]
+  add dx, [player_icon+2]
   
   ; 3) Copy a rectangle covering both player's previous and current locations from compositor to framebuffer
   push dx
@@ -209,7 +197,7 @@ bound_player:
   mov word [player_x], 0
   .next:
     mov ax, [room_width_px]
-    sub ax, [player_w]
+    sub ax, [player_icon+0]
     cmp word [player_x], ax
     jle .next2
     mov word [player_x], ax
@@ -219,9 +207,22 @@ bound_player:
     mov word [player_y], 0
   .next3:
     mov ax, [room_height_px]
-    sub ax, [player_h]
+    sub ax, [player_icon+2]
     cmp word [player_y], ax
     jle .done
     mov word [player_y], ax
   .done:
+  ret
+
+
+; ypos_to_priority()
+; Converts the Y position in AX to a priority.
+; floor( y/13 ) + 2
+ypos_to_priority:
+  push bx
+  mov bx, 13
+  div bx
+  pop bx
+  xor ah, ah
+  add ax, 2
   ret
