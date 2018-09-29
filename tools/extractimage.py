@@ -28,7 +28,7 @@ region = memory[offset:offset+length]
 #    f.write( bytes( region ))
 #sys.exit()
 
-r1, r2 = [],[]
+r0, r1, r2 = [], [], []
 for b in region:
     lo = b & 0xf
     r1 += [lo] * 2
@@ -36,6 +36,13 @@ for b in region:
     hi = b & 0xf0
     hi |= hi >> 4
     r2 += [hi] * 2
+
+    r0.append( hi & 0xf )
+    r0.append( lo )
+
+im0 = Image.frombytes( 'P', (320,169), bytes( r0 ), 'raw' )
+im0.putpalette( pcjr16colorpal )
+im0.save( '../scratchpad/r0.png' )
 
 im1 = Image.frombytes( 'P', (320,169), bytes( r1 ), 'raw' )
 im1.putpalette( pcjr16colorpal )
