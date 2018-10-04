@@ -5,18 +5,30 @@
 
 %include 'std/stdio.mac'
 
+%define DIR_NONE 0
+%define DIR_LEFT 1
+%define DIR_RIGHT 2
+%define DIR_UP 3
+%define DIR_DOWN 4
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 section .data
 
-  dbg: dw 0
+  originalVideoMode: db 0
 
   text_prompt: db "> $"
   text_comma: db ", $"
+  text_acknowledgement: db "Got it!"
+
+  text_input: times 64 db '$'
+  text_input_offset: dw 0
 
   path_room1: db "room1.bin", 0
 
   is_running: db 1
+
+  player_walk_dir: db DIR_NONE   ; See "DIR_" defines
 
   player_x: dw 160
   player_y: dw 100
@@ -46,8 +58,6 @@ section .data
 
 section .bss
 
-  originalVideoMode: resb 1
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 section .text
@@ -65,14 +75,12 @@ mov ax, 0x0582               ; AH = 0x05 (CPU/CRT page registers), AL = 0x82 (se
 mov bx, 0x0600               ; BH = Page 6, matching our FRAMEBUFFER_SEG
 int 10h                      ; Call INT10h fn 0x05 to set CRT page register to 6
 
-
 push word [BACKGROUND_SEG]
 mov ax, [room_width_px]
 mov bx, [room_height_px]
 mul bx
 shr ax, 1
 push ax
-mov [dbg], ax
 mov ax, path_room1
 push ax
 call read_file  ; read "room1.bin" into BACKGROUND_SEG
@@ -95,7 +103,14 @@ push ax
 push ax
 call blt_compositor_to_framebuffer
 
-call install_keyboard_handler
+;call install_keyboard_handler
+
+; Move cursor to text window and print a prompt
+xor bx, bx        ; Set page number for cursor move (0 for graphics modes)
+mov dx, 0x1500    ; line 21 (0x15), col 0 (0x0)
+mov ax, 0x0200    ; Call "set cursor"
+int 10h
+print text_prompt
 
 game_loop:
 
@@ -105,12 +120,14 @@ game_loop:
   mov si, player_x
   mov di, player_x_prev
   mov cx, 2
-  rep movsw
+  rep movsw   ; Copy 2 words from player_x... to player_x_prev...
 
-  call process_keys           ; Check keyboard state
+  call process_keys_2        ; Check keyboard state
 
   cmp byte [is_running], 0   ; If not running (ESC key pressed),
   je clean_up                ; jump out of game loop
+
+  call move_player
 
   call bound_player
   
@@ -158,21 +175,15 @@ game_loop:
   push ax
   call blt_compositor_to_framebuffer
 
-  xor bx, bx        ; Set page number for cursor move (0 for graphics modes)
-  mov dx, 0x1800    ; line 24 (0x18), col 0 (0x0)
-  mov ah, 2         ; Call "set cursor"
-  int 10h
-  print text_prompt
-
-  intToString buf16, [dbg]
-  print buf16
+  ;print text_prompt
+  ;print text_input
 
   jmp game_loop
 
 
 clean_up:
 
-call restore_keyboard_handler
+;call restore_keyboard_handler
 
 ; Change the video mode back to whatever it was before (the value stored in
 ; originalVideoMode)
@@ -191,26 +202,55 @@ int 21h
 %include 'input.asm'
 %include 'renderer.asm'
 
+move_player:
+  cmp byte [player_walk_dir], DIR_LEFT
+  jne .testRight
+  dec word [player_x]
+  dec word [player_x]
+  .testRight:
+    cmp byte [player_walk_dir], DIR_RIGHT
+    jne .testUp
+    inc word [player_x]
+    inc word [player_x]
+  .testUp:
+    cmp byte [player_walk_dir], DIR_UP
+    jne .testDown
+    dec word [player_y]
+  .testDown:
+    cmp byte [player_walk_dir], DIR_DOWN
+    jne .done
+    inc word [player_y]
+  .done:
+    ret
+
+; If the player has hit the boundaries of the room (x=2 or x=room_width_px-4, y=20 or y=room_height_px-2),
+; stop walking and move back 1 unit.
 bound_player:
-  cmp word [player_x], 0
+  cmp word [player_x], 2
   jge .next
-  mov word [player_x], 0
+  mov byte [player_walk_dir], DIR_NONE
+  mov word [player_x], 2
   .next:
     mov ax, [room_width_px]
     sub ax, [player_icon+0]
+    sub ax, 2
     cmp word [player_x], ax
     jle .next2
     mov word [player_x], ax
+    mov byte [player_walk_dir], DIR_NONE
   .next2:
-    cmp word [player_y], 0
+    cmp word [player_y], 24  ; Just a total guess at what the top of the room is
     jge .next3
-    mov word [player_y], 0
+    mov word [player_y], 24
+    mov byte [player_walk_dir], DIR_NONE
   .next3:
     mov ax, [room_height_px]
     sub ax, [player_icon+2]
+    sub ax, 1
     cmp word [player_y], ax
     jle .done
     mov word [player_y], ax
+    mov byte [player_walk_dir], DIR_NONE
   .done:
   ret
 
