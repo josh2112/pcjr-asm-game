@@ -30,9 +30,9 @@ section .data
 
   player_walk_dir: db DIR_NONE   ; See "DIR_" defines
 
-  player_x: dw 160
+  player_x: dw 200
   player_y: dw 100
-  player_x_prev: dw 160
+  player_x_prev: dw 200
   player_y_prev: dw 100
 
   player_icon: dw 14, 16
@@ -128,7 +128,6 @@ game_loop:
   je clean_up                ; jump out of game loop
 
   call move_player
-
   call bound_player
   
   ; 1) Copy rectangle covering player's previous location from background to compositor
@@ -139,14 +138,15 @@ game_loop:
   call blt_background_to_compositor
 
   ; 2) Draw the player icon in its new location in the compositor
-  push word [player_y]
-  push word [player_x]
   mov ax, [player_y]
   add ax, [player_icon+2]
-  call ypos_to_priority
+  dec ax
+  call ypos_to_priority  ; AX = priority of player (taken at foot line)
+  mov bx, player_icon    ; BX = pointer to player icon W,H
+  push word [player_y]
+  push word [player_x]
   push ax
-  mov ax, player_icon
-  push ax
+  push bx
   call draw_icon
 
   ; Combine player previous and current rect:
@@ -175,9 +175,6 @@ game_loop:
   push ax
   call blt_compositor_to_framebuffer
 
-  ;print text_prompt
-  ;print text_input
-
   jmp game_loop
 
 
@@ -203,57 +200,100 @@ int 21h
 %include 'renderer.asm'
 
 move_player:
-  cmp byte [player_walk_dir], DIR_LEFT
+  mov bl, [player_walk_dir]
+  cmp bl, DIR_LEFT
   jne .testRight
   dec word [player_x]
   dec word [player_x]
   .testRight:
-    cmp byte [player_walk_dir], DIR_RIGHT
+    cmp bl, DIR_RIGHT
     jne .testUp
     inc word [player_x]
     inc word [player_x]
   .testUp:
-    cmp byte [player_walk_dir], DIR_UP
+    cmp bl, DIR_UP
     jne .testDown
     dec word [player_y]
   .testDown:
-    cmp byte [player_walk_dir], DIR_DOWN
+    cmp bl, DIR_DOWN
     jne .done
     inc word [player_y]
   .done:
     ret
 
-; If the player has hit the boundaries of the room (x=2 or x=room_width_px-4, y=20 or y=room_height_px-2),
-; stop walking and move back 1 unit.
+; Check the player's feet (bottom scanline of icon). If they have have hit a 
+; hard boundary (pri=0), stop the walking motion and move back one unit.
+; If water (1) or a room boundary (15) has been hit, stop the walking and return
+; what was hit.
+; Skeleton lines are:
+; 0 = hard boundary
+; 1 = water
+; 15 = room boundary
 bound_player:
-  cmp word [player_x], 2
-  jge .next
-  mov byte [player_walk_dir], DIR_NONE
-  mov word [player_x], 2
-  .next:
-    mov ax, [room_width_px]
-    sub ax, [player_icon+0]
-    sub ax, 2
-    cmp word [player_x], ax
-    jle .next2
-    mov word [player_x], ax
-    mov byte [player_walk_dir], DIR_NONE
-  .next2:
-    cmp word [player_y], 24  ; Just a total guess at what the top of the room is
-    jge .next3
-    mov word [player_y], 24
-    mov byte [player_walk_dir], DIR_NONE
-  .next3:
-    mov ax, [room_height_px]
-    sub ax, [player_icon+2]
-    sub ax, 1
-    cmp word [player_y], ax
-    jle .done
-    mov word [player_y], ax
-    mov byte [player_walk_dir], DIR_NONE
+  mov ax, [player_y]
+  add ax, [player_icon+2]
+  dec ax     ; AX = player foot-line
+  ; Compute starting location for player foot-line in framebuffer
+  ; SI = (AX * 320 + x) / 2
+  mov bx, [room_width_px]
+  mul bx           ; AX *= 320
+  add ax, [player_x]   ; ... + x
+  shr ax, 1        ; ... / 2
+  mov si, ax
+  mov cx, [player_icon+0]
+  shr cx, 1
+  push ds            ; DS to source (FB)
+  mov ds, [BACKGROUND_SEG]
+  .checkPixel:
+    xor ah, ah
+    mov al, [ds:si]
+    ; The priority is the upper 4 bits. We're looking for 0, 1, or 15.
+    ; If we add 0b00010000 (0x10), then shift right by 4, we can just look for
+    ; a number less than 3.
+    add al, 0x10
+    shr al, 1
+    shr al, 1
+    shr al, 1
+    shr al, 1
+    cmp al, 3
+    jl .foundBorder
+    inc si
+    loop .checkPixel
+    jmp .done
+  .foundBorder:
+    pop ds
+    call bounce_back
+    ret
   .done:
-  ret
+    pop ds
+    ret
 
+bounce_back:
+  mov byte bl, [player_walk_dir]
+  cmp bl, DIR_LEFT
+  jne .next
+  mov bl, DIR_NONE
+  inc word [player_x]
+  inc word [player_x]
+  .next:
+    cmp bl, DIR_RIGHT
+    jne .next2
+    mov bl, DIR_NONE
+    dec word [player_x]
+    dec word [player_x]
+  .next2:
+    cmp bl, DIR_UP
+    jne .next3
+    mov bl, DIR_NONE
+    inc word [player_y]
+  .next3:
+    cmp bl, DIR_DOWN
+    jne .done
+    mov bl, DIR_NONE
+    dec word [player_y]
+  .done:
+    mov byte [player_walk_dir], bl
+    ret
 
 ; ypos_to_priority()
 ; Converts the Y position in AX to a priority.

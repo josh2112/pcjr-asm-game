@@ -5,36 +5,6 @@
 
 %include 'std/stdio.asm'
 
-; Processes the keys in the keyboardState buffer.
-; - Cursor keys (up, down, left, right): Adjust player position.
-; - Esc key: set is_running to false (game will be exited)
-process_keys:
-  cmp byte [keyboardState+KEYCODE_ESC], 1
-  jne .testUp
-  mov byte [is_running], 0
-  .testUp:
-    cmp byte [keyboardState+KEYCODE_UP], 1
-    jne .testDown
-    dec word [player_y]
-  .testDown:
-    cmp byte [keyboardState+KEYCODE_DOWN], 1
-    jne .testLeft
-    inc word [player_y]
-  .testLeft:
-    cmp byte [keyboardState+KEYCODE_LEFT], 1
-    jne .testRight
-    dec word [player_x]
-    dec word [player_x]
-  .testRight:
-    cmp byte [keyboardState+KEYCODE_RIGHT], 1
-    jne .done
-    inc word [player_x]
-    inc word [player_x]
-  .done:
-    ret
-
-%endif ; INPUT_ASM
-
 ; Process any keystrokes in the keyboard buffer. Strategy:
 ; - Look for special key:
 ;   - Handle ESC as quit the program.
@@ -147,3 +117,6 @@ advance_to_next_line:
     mov dx, 0x1827 ; Lower right = row 24, col 39
     int 10h
     ret
+
+
+%endif ; INPUT_ASM
