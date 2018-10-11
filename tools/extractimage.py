@@ -1,52 +1,57 @@
 #!/bin/python
 
 import sys
+import os
 from PIL import Image
 
 def getarg( i, default ):
     try: return sys.argv[i]
     except: return default
 
+def readtxt( path ):
+    with open( path, 'r' ) as f:
+        lines = [line.split()[1:] for line in f.readlines()]
+        return [int(v, 16) for line in lines for v in line]
+
+def readbin( path ):
+    with open( path, 'rb' ) as f:
+        return f.read()
+
 pcjr16colorpal = [
     0, 0, 0, 0, 0, 170, 0, 170, 0, 0, 170, 170, 170, 0, 0, 170, 0, 170, 170, 85, 0, 170, 170, 170,
     85, 85, 85, 85, 85, 255, 85, 255, 85, 85, 255, 255, 255, 85, 85, 255, 85, 255, 255, 255, 85, 255, 255, 255
 ]
-pcjr16colorpal += [0] * 720
+pcjr16colorpal += [0] * (768-len(pcjr16colorpal))
 
 path = getarg( 1, "../scratchpad/memdump.txt" )
 offset = int( getarg( 2,"0x3a080" ), 16 )
 length = int( getarg( 3,"27040" ))
 
-with open( path, 'r' ) as f:
-    lines = [line.split()[1:] for line in f.readlines()]
-    memory = [int(v, 16) for line in lines for v in line]
+memory = readbin( path ) if os.path.splitext( path )[1].lower() == '.bin' else readtxt( path )
 
 region = memory[offset:offset+length]
 
-# Write region to file
-#with open( "../scratchpad/room1.bin", 'wb' ) as f:
-#    f.write( bytes( region ))
-#sys.exit()
-
-r0, r1, r2 = [], [], []
+rRaw, rLo, rHi = [], [], []
 for b in region:
-    lo = b & 0xf
-    r1 += [lo] * 2
+    lo = b & 0x0f
+    rLo += [lo] * 2
 
     hi = b & 0xf0
     hi |= hi >> 4
-    r2 += [hi] * 2
+    rHi += [hi] * 2
 
-    r0.append( hi & 0xf )
-    r0.append( lo )
+    #rRaw.append( hi & 0xf )
+    #rRaw.append( lo )
 
-im0 = Image.frombytes( 'P', (320,169), bytes( r0 ), 'raw' )
-im0.putpalette( pcjr16colorpal )
-im0.save( '../scratchpad/r0.png' )
+outputname = os.path.splitext( os.path.basename( path ))[0]
 
-im1 = Image.frombytes( 'P', (320,169), bytes( r1 ), 'raw' )
-im1.putpalette( pcjr16colorpal )
-im1.save( '../scratchpad/r1.png' )
+#img = Image.frombytes( 'P', (320,169), bytes( rRaw ), 'raw' )
+#img.putpalette( pcjr16colorpal )
+#img.save( outputname + '-raw.png' )
 
-im2 = Image.frombytes( 'P', (320,169), bytes( r2 ), 'raw' )
-im2.save( '../scratchpad/r2.png' )
+img = Image.frombytes( 'P', (320,169), bytes( rLo ), 'raw' )
+img.putpalette( pcjr16colorpal )
+img.save( outputname + '-lo.png' )
+
+img = Image.frombytes( 'P', (320,169), bytes( rHi ), 'raw' )
+img.save( outputname + '-hi.png' )
