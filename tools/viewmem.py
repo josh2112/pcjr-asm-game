@@ -54,37 +54,54 @@ def validateLengthEntry( potential_value ):
     except: return False
     return True
 
+class SpinboxWithMouseWheel( tk.Spinbox ):
+    def __init__( self, *args, **kwargs ):
+        tk.Spinbox.__init__( self, *args, **kwargs )
+        self.bind( '<MouseWheel>', lambda evt: self.invoke( 'button' + ('up' if evt.delta > 0 else 'down' )))
+
+class HexSpinboxWithMouseWheel( tk.Spinbox ):
+    def __init__( self, *args, **kwargs ):
+        SpinboxWithMouseWheel.__init__( self, *args, **kwargs )
+        self.config( increment=0, command=(self.register( self.spinhex ), '%W', '%s', '%d', '%%04X' ))
+
+    def spinhex( self, w, value, dir, format ):
+        w.set( format( value, 'x' ))
+
 class ViewMemWindow( tk.Frame ):
     def __init__( self, parent ):
         tk.Frame.__init__( self, parent )
         self.parent = parent
         
         self.memory, self.region = None, None
-        
-        tk.Label( self, text="Offset" ).grid( row=0, column=1 )
 
-        tk.Label( self, text="Offset" ).grid( row=0, column=1 )
-        tk.Label( self, text='0x' ).grid( row=1, column=0 )
-        vcmd = (self.register( validateOffsetEntry ), '%P' )
-        self.offsetText = tk.StringVar()
+        self.offsetText, self.lengthText = tk.StringVar(), tk.StringVar()
         self.offsetText.trace( "w", lambda *_: self.updateImage() )
-        offsetEntry = tk.Entry( self, textvariable=self.offsetText, validate='key', validatecommand=vcmd )
-        offsetEntry.grid( row=1, column=1 )
-
-        tk.Label( self, text="Length" ).grid( row=2, column=1 )
-        vcmd = (self.register( validateLengthEntry ), '%P' )
-        self.lengthText = tk.StringVar()
         self.lengthText.trace( "w", lambda *_: self.updateImage() )
-        lengthEntry = tk.Entry( self, textvariable=self.lengthText, validate='key', validatecommand=vcmd )
-        lengthEntry.grid( row=3, column=1 )
 
-        self.canvas = tk.Canvas( self, width=400, height=800 )
-        self.canvas.grid( row=0, column=2, rowspan=4 )
+        frame = tk.Frame( self )
+        frame.pack( side=tk.LEFT, padx=10 )
+        
+        self.canvas = tk.Canvas( self )
+        self.canvas.pack( fill=tk.BOTH, expand=1 )
+
+        tk.Label( frame, text="Offset" ).grid( row=0, column=1 )
+        tk.Label( frame, text='0x' ).grid( row=1, column=0 )
+        tk.Entry( frame, justify=tk.RIGHT, textvariable=self.offsetText, validate='key',
+            validatecommand=(self.register( validateOffsetEntry ), '%P' ) ).grid( row=1, column=1 )
+
+        tk.Label( frame, text="Length" ).grid( row=2, column=1 )
+        tk.Entry( frame, justify=tk.RIGHT, textvariable=self.lengthText, validate='key',
+            validatecommand=(self.register( validateLengthEntry ), '%P' ) ).grid( row=3, column=0, columnspan=2, sticky=tk.EW )
+
+        offsetSpinner = HexSpinboxWithMouseWheel( frame, from_=0, to_=0x100000 )
+        offsetSpinner.grid( row=4, columnspan=2 )
+        lengthSpinner = SpinboxWithMouseWheel( frame, from_=0, to_=0x100000 )
+        lengthSpinner.grid( row=5, columnspan=2 )
 
         self.offsetText.set( format( 0x3a080, 'x' ))
         self.lengthText.set( str( 27040 ))
         
-        self.pack()
+        self.pack( fill=tk.BOTH, expand=1 )
     
     def offset( self ): return int( self.offsetText.get(), 16 )
     def length( self ): return int( self.lengthText.get() )
@@ -112,6 +129,7 @@ if __name__ == '__main__':
 
     root = tk.Tk()
     tkFont.nametofont( "TkDefaultFont" ).configure( size=12 )
+    tkFont.nametofont( "TkTextFont" ).configure( size=12 )
     win = ViewMemWindow(root)
     
     win.loadDump( args.dumppath )
