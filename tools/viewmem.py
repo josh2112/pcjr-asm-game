@@ -62,9 +62,10 @@ class SpinboxWithMouseWheel( tk.Spinbox ):
 class HexSpinboxWithMouseWheel( tk.Spinbox ):
     def __init__( self, *args, **kwargs ):
         SpinboxWithMouseWheel.__init__( self, *args, **kwargs )
-        self.config( increment=0, command=(self.register( self.spinhex ), '%W', '%s', '%d', '%%04X' ))
+        self.config( increment=0, command=(self.register( self.spinhex ), '%s', '%d', '%%04X' ))
 
-    def spinhex( self, w, value, dir, format ):
+    def spinhex( self, value, dir, format ):
+        self.form
         w.set( format( value, 'x' ))
 
 class ViewMemWindow( tk.Frame ):
