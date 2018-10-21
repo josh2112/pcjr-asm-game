@@ -1,9 +1,11 @@
+import argparse
+import os
+import math
+import sys
 import tkinter as tk
 from tkinter import font as tkFont
-from PIL import Image, ImageTk
 
-import os, sys
-import argparse
+from PIL import Image, ImageTk
 
 pcjr16colorpal = [
     0, 0, 0, 0, 0, 170, 0, 170, 0, 0, 170, 170, 170, 0, 0, 170, 0, 170, 170, 85, 0, 170, 170, 170,
@@ -44,78 +46,138 @@ def takeADump( region, basename ):
     img = Image.frombytes( 'P', (320,169), bytes( rHi ), 'raw' )
     img.save( basename + '-hi.png' )
 
-def validateOffsetEntry( potential_value ):
-    try: potential_value == '' or int( potential_value, 16 )
-    except: return False
-    return True
+class TkinterConfigInterceptorMixin( tk.Widget ):
+    def add_args( self, args, **kwargs ):
+        if not hasattr( self, "_args" ): self._args = {}
+        for k,v in kwargs.items():
+            self._args[k] = v
+            self.__dict__[k] = v
+            kwargs.setdefault( k, v )
 
-def validateLengthEntry( potential_value ):
-    try: potential_value == '' or int( potential_value )
-    except: return False
-    return True
+    def config( self, **kwargs ):
+        for k,v in self._args.items():
+            if k in kwargs:
+                self.__dict__[k] = kwargs.pop( k )
+                self.config_arg_changed( k, v )
+                # TODO: Notify changed!
+                # if self.intvar:
+                #     self.intvar.trace( "w", lambda *_: self.valueText.set( str( self.intvar.get() ) ))
+        return super().config( **kwargs )
+    
+    def cget( self, key ):
+        return self.__dict__[key] if key in self._args else super().cget( key )
 
-class SpinboxWithMouseWheel( tk.Spinbox ):
+    def config_arg_changed( self, key, val ): pass
+
+
+class SpinboxWithMouseWheel( tk.Spinbox, TkinterConfigInterceptorMixin ):
     def __init__( self, *args, **kwargs ):
-        tk.Spinbox.__init__( self, *args, **kwargs )
+        tk.Spinbox.__init__( self, *args )
+        self.add_args( kwargs, intvar=None )
+        self.valueText = tk.StringVar()
+        self.valueText.set( str( self.intvar.get() if self.intvar else 0 ))
+        TkinterConfigInterceptorMixin.config( self, **kwargs, textvariable=self.valueText )
         self.bind( '<MouseWheel>', lambda evt: self.invoke( 'button' + ('up' if evt.delta > 0 else 'down' )))
 
-class HexSpinboxWithMouseWheel( tk.Spinbox ):
-    def __init__( self, *args, **kwargs ):
-        SpinboxWithMouseWheel.__init__( self, *args, **kwargs )
-        self.config( increment=0, command=(self.register( self.spinhex ), '%s', '%d', '%%04X' ))
+    def on_intvar_updated( self, val ): self.valueText.set( val )
 
-    def spinhex( self, value, dir, format ):
-        self.form
-        w.set( format( value, 'x' ))
+    def config_arg_changed( self, key, val ):
+        if key == "intvar":
+            self.intvar.trace( "w", lambda *_: self.on_intvar_updated( self.intvar.get() ))
+
+
+class HexSpinboxWithMouseWheel( SpinboxWithMouseWheel ):
+    def __init__( self, *args, **kwargs ):
+        self.add_args( kwargs, increment=1, format="04X" )
+        super().__init__( *args, **kwargs )
+        tk.Spinbox.config( self, increment=0 )
+        self.config( command=(self.register( self.spinhex ), '%s', '%d' ))
+
+    def spinhex( self, value, dir ):
+        from_, to_ = int( self.cget( "from" )), int( self.cget( "to" ))
+        wrap = bool( self.cget( "wrap" ))
+        val = int( value, 16 )
+        val += self.increment if dir == 'up' else -self.increment
+        if val > to_: val = from_ if wrap else to_
+        if val < from_: val = to_ if wrap else from_
+        self.intvar.set( val )
+
+    def on_intvar_updated( self, val ):
+        self.valueText.set( format( val, self.format ))
 
 class ViewMemWindow( tk.Frame ):
     def __init__( self, parent ):
         tk.Frame.__init__( self, parent )
         self.parent = parent
         
-        self.memory, self.region = None, None
+        self.memory, self.region = [], []
 
-        self.offsetText, self.lengthText = tk.StringVar(), tk.StringVar()
-        self.offsetText.trace( "w", lambda *_: self.updateImage() )
-        self.lengthText.trace( "w", lambda *_: self.updateImage() )
+        self.offsetVar, self.lengthVar = tk.IntVar(), tk.IntVar()
+        self.offsetVar.trace( "w", lambda *_: self.on_offset_updated() )
+        self.lengthVar.trace( "w", lambda *_: self.on_length_updated() )
 
         frame = tk.Frame( self )
         frame.pack( side=tk.LEFT, padx=10 )
         
-        self.canvas = tk.Canvas( self )
-        self.canvas.pack( fill=tk.BOTH, expand=1 )
+        self.imgContainer = tk.Canvas( self )
+        self.imgContainer.pack( fill=tk.BOTH, expand=1 )
 
         tk.Label( frame, text="Offset" ).grid( row=0, column=1 )
         tk.Label( frame, text='0x' ).grid( row=1, column=0 )
-        tk.Entry( frame, justify=tk.RIGHT, textvariable=self.offsetText, validate='key',
-            validatecommand=(self.register( validateOffsetEntry ), '%P' ) ).grid( row=1, column=1 )
+        self.offsetSpinner = HexSpinboxWithMouseWheel( frame, justify=tk.RIGHT, intvar=self.offsetVar, to_=0 )
+        self.offsetSpinner.grid( row=1, column=1 )
 
         tk.Label( frame, text="Length" ).grid( row=2, column=1 )
-        tk.Entry( frame, justify=tk.RIGHT, textvariable=self.lengthText, validate='key',
-            validatecommand=(self.register( validateLengthEntry ), '%P' ) ).grid( row=3, column=0, columnspan=2, sticky=tk.EW )
+        self.lengthSpinner = SpinboxWithMouseWheel( frame, justify=tk.RIGHT, intvar=self.lengthVar, to_=0 )
+        self.lengthSpinner.grid( row=3, column=0, columnspan=2, sticky=tk.EW )
 
-        offsetSpinner = HexSpinboxWithMouseWheel( frame, from_=0, to_=0x100000 )
-        offsetSpinner.grid( row=4, columnspan=2 )
-        lengthSpinner = SpinboxWithMouseWheel( frame, from_=0, to_=0x100000 )
-        lengthSpinner.grid( row=5, columnspan=2 )
-
-        self.offsetText.set( format( 0x3a080, 'x' ))
-        self.lengthText.set( str( 27040 ))
-        
         self.pack( fill=tk.BOTH, expand=1 )
-    
-    def offset( self ): return int( self.offsetText.get(), 16 )
-    def length( self ): return int( self.lengthText.get() )
 
+    @property
+    def offset( self ): return self.offsetVar.get()
+    @property
+    def length( self ): return self.lengthVar.get()
+    
+    def on_offset_updated( self ):
+        tmp = self.length
+        self.lengthSpinner.config( to_=len(self.memory)-self.offset )
+        if self.length != tmp: self.lengthVar.set( tmp )
+        self.updateImage()
+    
+    def on_length_updated( self ):
+        # Setting a spinner's "from" or "to" resets the value, grumble grumble
+        tmp = self.offset
+        self.offsetSpinner.config( to_=len(self.memory)-self.length )
+        if self.offset != tmp: self.offsetVar.set( tmp )
+        self.updateImage()
+    
     def loadDump( self, path ):
         self.parent.title( f"{path} - {os.path.basename( __file__ )}" )
-        _, dumpext = os.path.splitext( os.path.basename( path ))
+        dumpext = os.path.splitext( os.path.basename( path ))[1]
         self.memory = readbin( path ) if dumpext.lower() == '.bin' else readtxt( path )
-        self.updateImage()
+        self.offsetVar.set( 0x3a080 )
+        self.lengthVar.set( 27040 )
 
     def updateImage( self ):
-        if self.memory:
-            self.region = self.memory[self.offset():self.offset()+self.length()]
+        if not len(self.memory): return
+        imgbytes = []
+        for b in self.memory[self.offset:self.offset+self.length]:
+            hi = b & 0xf0
+            hi |= hi >> 4
+            imgbytes.append( hi & 0xf )
+            lo = b & 0x0f
+            imgbytes.append( lo )
+        
+        padBytes = math.ceil((self.length*2)/320) * 320 - len(imgbytes)
+        imgbytes += [0] * padBytes
+
+        print( "imgbytes size = ", len(imgbytes))
+        print( "expecting = ", (320*169))
+        
+        img = Image.frombytes( 'P', (320,169), bytes( imgbytes ), 'raw' )
+        img.putpalette( pcjr16colorpal )
+        self.image = ImageTk.PhotoImage( img.resize( (320*3, 169*3) ) )
+        self.imgContainer.create_image( 0, 0, image=self.image )
 
 
 if __name__ == '__main__':
@@ -131,7 +193,7 @@ if __name__ == '__main__':
     root = tk.Tk()
     tkFont.nametofont( "TkDefaultFont" ).configure( size=12 )
     tkFont.nametofont( "TkTextFont" ).configure( size=12 )
-    win = ViewMemWindow(root)
+    win = ViewMemWindow( root )
     
     win.loadDump( args.dumppath )
     
