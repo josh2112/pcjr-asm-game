@@ -1,0 +1,20 @@
+Packet structure:
+[SOH][PAKNUM][...FILEDATA...][CKSUM]
+Packets are 131 bytes (128 bytes of data plus 1 byte each SOH, PAKNUM, CKSUM)
+
+Reception algorithm:
+ - Read 131 bytes into buffer
+ - Verify checksum across entire packet (excluding checksum byte)
+ - Verify first byte is SOH
+ - Verify packet number
+   - If any of the above three fail, send NAK and restart.
+ - If first packet:
+   - Extract file name (bytes 2-13) and file size (bytes 14-15)
+   - set start of copy to offset 16 (instead of 2)
+ - Copy FILEDATA into file buffer (smaller of 128 or (filesize-bytesrecvd))
+ - Increment packet number and increase bytesrecvd by number of bytes copied
+ - Acknowledge packet
+ - If bytesrecvd < filesize, repeat. Else:
+ - open file, write all of filebuf, exit.
+
+[...FILEDATA...] is 8.3 filename followed by 2-byte file size followed by file contents

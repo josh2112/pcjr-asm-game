@@ -1,57 +1,57 @@
-10 CLS
-20 PRINT "JMODEM by Joshua Foster"
+10 CLS:PRINT "JMODEM by Joshua Foster"
 30 DEFINT A-Z
-40 ACK$=CHR$(6):NAK$=CHR$(21)
-50 DIM BUF(132)
-60 DIM FILEBUF(16384)
+50 DIM FBUF(16384),SBUF(131)
 70 NF=0:TOTALPAKS=0
-80 PRINT "Opening COM2:1200,N,8,1..."
+80 PRINT "Opening serial port...";
 90 OPEN "COM2:1200,N,8,1,CS,DS,CD" AS #1
 100 PRINT "Waiting for data...";
-110 REM --- Receive packet ---
-120 N=0
-130 WHILE N<131
-140 IF EOF(1) THEN 140
-150 A$=INPUT$(LOC(1),#1)
-160 FOR I=0 TO LEN(A$)-1
-170 BUF(N+I)=ASC(MID$(A$,I+1,1)) 'CAN WE DO THIS BETTER?
-180 NEXT I
-190 N=N+I
+110 ' Receive packet
+120 NS=0
+130 WHILE NS<131
+140   IF EOF(1) THEN 140
+150   A$=INPUT$(LOC(1),#1)
+160   FOR I=0 TO LEN(A$)-1
+170     SBUF(NS+I)=ASC(MID$(A$,I+1,1))
+180   NEXT I
+190   NS=NS+I
 200 WEND
-210 REM -- Verify checksum ---
+210 ' Verify checksum
 220 GOSUB 390
-230 IF NOT VALID THEN PRINT "Bad packet, trying again";:PRINT #1,NAK$;:GOTO 110
-240 REM -- Verify packet number ---
-250 PAKNUM=BUF(1)
+230 IF NOT VALID THEN PRINT "Checksum failed, trying again";:PRINT #1,CHR$(21);:GOTO 110
+240 ' Verify packet number
+250 PAKNUM=SBUF(1)
 260 IF PANKUM<>TOTALPAKS THEN PRINT "Expected packet"TOTALPAKS"but received"PAKNUM"!":CLOSE:END
-261 REM -- Special handling for header packet --
-262 IF PAKNUM = 0 THEN GOSUB 470:PRINT #1,ACK$;:GOTO 110
-270 REM -- Copy packet data to filebuf ---
-280 FOR I=0 TO 128
-290 FILEBUF(NF+I)=BUF(I+2)
+261 OFFSET=0
+262 ' Special handling for header packet
+263 IF PAKNUM=0 THEN GOSUB 470
+270 ' Copy packet data to filebuf ---
+275 TOCOPY=SIZE-NF:IF TOCOPY>(128-OFFSET) THEN TOCOPY=(128-OFFSET)
+280 FOR I=0 TO TOCOPY
+290   FBUF(NF+I)=SBUF(OFFSET+I)
 300 NEXT I
 310 TOTALPAKS=TOTALPAKS+1
-320 NF=NF+128
+320 NF=NF+TOCOPY
 330 PRINT NF"...";
-340 REM --- Ack the packet and recv the next one ---
+340 'Ack the packet and recv the next one
 350 PRINT #1,ACK$;
-360 GOTO 110
-370 END
-380 REM ------ Subroutines ------
-390 REM --- Checksum() ---
+360 IF NF<SIZE THEN GOTO 110
+365 PRINT "Writing file to disk...";
+366 OPEN NAME$ FOR OUTPUT AS #2
+367 DIM FBUFSTR$(SIZE)
+368 FOR I=0 TO SIZE-1: FBUFSTR$(I)=CHR$(FBUF(I)): NEXT I
+369 CLOSE
+370 PRINT "Complete!"
+371 END
+380 ' --- Subroutines ---
+390 'Checksum()
 400 SUM=0
-410 FOR I=2 TO 129
-420 SUM=SUM+BUF(I)
-430 NEXT I
-440 SUM=SUM MOD 256
-450 VALID = SUM<>BUF(131)
+410 FOR I=0 TO 129:SUM=SUM+BUF(I):NEXT I
+450 VALID=(SUM MOD 256=BUF(130))
 460 RETURN
-470 REM --- ReadHeader() ---
-480 REM --- size (2), name (12) ---
-490 FILESIZE = CVI(CHR$(BUF(3))+CHR$(BUF(2)))
-500 FILENAME = ""
-510 FOR I=5 TO 16
-520 FILENAME = FILENAME + CHR$(BUF(I))
-530 NEXT I
-540 REM TODO Open file as #2!
-550 RETURN
+470 ' Read header
+490 NAME$ = ""
+500 FOR I=2 TO 13:NAME$=NAME$+CHR$(BUF(I)):NEXT I
+530 SIZE = CVI(CHR$(BUF(15))+CHR$(BUF(14)))
+540 PRINT "Receiving "NAME$" ("SIZE" bytes)..."
+560 OFFSET=14
+570 RETURN
