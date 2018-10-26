@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+#
+# TCP multicast server
+# Accepts connections from multiple clients. Relays data from any client
+# to all other clients.
 
 import asyncio
 
@@ -12,7 +16,7 @@ async def hub_server( reader, writer, clients, lock ):
     async with lock: clients[myaddr] = writer
     try:
         while True:
-            data = await reader.read( 1024 )
+            data = await reader.read( 128 )
             if not data: break
             async with lock:
                 destinations = {addr:writer for (addr,writer) in clients.items() if addr != myaddr}
