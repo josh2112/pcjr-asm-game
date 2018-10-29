@@ -21,7 +21,6 @@ class JModemSender:
             packet = self.make_header_packet( file, name, size ) if self.paknum == 0 else self.make_packet( file )
             packet_enc = bytes( packet )
             print( "Sending packet {}".format( packet[1] ))
-            print( packet_enc )
             while True:
                 self.serial.write( packet_enc )
                 response = self.serial.read( 1 )[0]
