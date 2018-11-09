@@ -4,8 +4,8 @@ import sys, math, os
 import serial
 import argparse
 
-url = "socket://localhost:7000"
-#url = "/dev/tty.UC-232AC"
+#url = "socket://localhost:7000"
+url = "/dev/tty.UC-232AC"
 
 SOH = 1
 ACK = 6
