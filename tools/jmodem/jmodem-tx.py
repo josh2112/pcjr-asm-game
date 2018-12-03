@@ -16,11 +16,11 @@ class JModemSender:
         self.serial = serial
     
     def send( self, file, name, size ):
-        self.paknum = 0
+        self.paknum, self.totalpaks = 0, math.ceil( size/128 )
         while file.peek():
-            packet = self.make_header_packet( file, name, size ) if self.paknum == 0 else self.make_packet( file )
+            packet = self.make_packet( file )
             packet_enc = bytes( packet )
-            print( "Sending packet {}".format( packet[1] ))
+            print( "Sending packet {}/{}".format( packet[1], self.totalpaks ))
             while True:
                 self.serial.write( packet_enc )
                 response = self.serial.read( 1 )[0]
@@ -34,20 +34,11 @@ class JModemSender:
             self.paknum += 1
     
     def make_packet( self, file ):
-        packet = [SOH, self.paknum]
-        packet += file.read( 130-len(packet))
-        packet.extend( [0] * (130-len(packet))) # pad with zeroes up to 130
-        packet += [sum( packet ) % 256]
-        return packet
-
-    def make_header_packet( self, file, name, size ):
-        packet = [SOH, self.paknum, len(name)]
-        packet += [ord(c) for c in name]
-        packet += size.to_bytes( 2, 'little' )
-        print( "Filling the packet with up to {} bytes".format( 130-len(packet)))
-        filedata = file.read( 130-len(packet))
-        packet += filedata
-        packet.extend( [0] * (130-len(packet))) # pad with zeroes up to 130
+        packet = [SOH]
+        packet += self.paknum.to_bytes( 2, 'little' )
+        packet += self.totalpaks.to_bytes( 2, 'little' )
+        packet += file.read( 133-len(packet))
+        packet.extend( [0] * (133-len(packet))) # pad with zeroes up to 133
         packet += [sum( packet ) % 256]
         return packet
 
@@ -62,7 +53,7 @@ if __name__=="__main__":
         serial.baudrate = 1200
         
         filesize = os.stat( args.path ).st_size
-        if filesize > 16384:
+        if filesize > 32000:
             print( "Too big to send!" )
             sys.exit
 
