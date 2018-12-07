@@ -36,7 +36,7 @@ compile_options += -i=$(tcp_h_dir) -i=$(common_h_dir)
 tcpobjs = packet.obj arp.obj eth.obj ip.obj tcp.obj tcpsockm.obj udp.obj utils.obj dns.obj timer.obj ipasm.obj
 objs = jrecv.obj
 
-all : clean jrecv.exe
+all : jrecv.exe
 
 clean : .symbolic
   @del jrecv.exe
@@ -56,6 +56,8 @@ patch : .symbolic
 .cpp.obj :
   wpp $[* $(compile_options)
 
-
 jrecv.exe: $(tcpobjs) $(objs)
   wlink system dos option map option stack=4096 name $@ file *.obj
+
+shrink: jrecv.exe
+  ..\..\..\upx\upx.exe $@

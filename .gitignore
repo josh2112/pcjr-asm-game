@@ -1,3 +1,5 @@
 *.com
 *.lst
+*.obj
+*.map
 capture/
