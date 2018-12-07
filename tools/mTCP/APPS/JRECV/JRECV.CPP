@@ -24,9 +24,6 @@ static void shutdown( int rc );
 
 uint16_t LclPort = 7000;         // Local port to use for our socket (0 means not set)
 
-#define RECV_BUFFER_SIZE (1024)
-uint8_t recvBuffer[ RECV_BUFFER_SIZE ];
-
 uint16_t WRITE_BUF_SIZE = 8192;  // Size of buffer used for writing stdout
 
 // Trap Ctrl-Break and Ctrl-C so that we can unhook the timer interrupt
@@ -78,7 +75,7 @@ int main( int argc, char *argv[] ) {
   fprintf( stderr, "Waiting for a connection on port %u. Press [ESC] to abort.\n\n", LclPort );
 
   TcpSocket *listeningSocket = TcpSocketMgr::getSocket();
-  listeningSocket->listen( LclPort, RECV_BUFFER_SIZE );
+  listeningSocket->listen( LclPort, 0 );
 
   // Listen is non-blocking.  Need to wait
   while( 1 ) {
@@ -134,11 +131,12 @@ int main( int argc, char *argv[] ) {
     Arp::driveArp();
     Tcp::drivePackets();
 
-    if ( mySocket->isRemoteClosed( ) ) done = 1;
+    if( mySocket->isRemoteClosed( ) ) done = 1;
     
     uint8_t *packet;
 
     while ( packet = ((uint8_t *)mySocket->incoming.dequeue( )) ) {
+
       IpHeader *ip = (IpHeader *)(packet + sizeof(EthHeader) );
       TcpHeader *tcp = (TcpHeader *)(ip->payloadPtr( ));
       uint8_t *userData = ((uint8_t *)tcp)+tcp->getTcpHlen( );
@@ -176,6 +174,12 @@ int main( int argc, char *argv[] ) {
           fprintf( stderr, "\JRECV: Press Alt-X to exit\n\n" );
         }
       }
+    }
+  }
+
+  if( bytesRead ) {
+    if( write( 1, fileWriteBuffer, bytesRead ) != bytesRead ) {
+      fprintf( stderr, "\nwrite() failed!" );
     }
   }
 
