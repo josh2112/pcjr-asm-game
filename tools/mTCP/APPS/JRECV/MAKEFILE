@@ -60,4 +60,4 @@ jrecv.exe: $(tcpobjs) $(objs)
   wlink system dos option map option stack=4096 name $@ file *.obj
 
 shrink: jrecv.exe
-  ..\..\..\upx\upx.exe $@
+  ..\..\..\upx\upx.exe jrecv.exe

@@ -15,6 +15,9 @@
 #include "tcp.h"
 #include "tcpsockm.h"
 
+#define KEY_ESC (27)
+
+
 // Function prototypes
 
 static void parseArgs( int argc, char *argv[] );
@@ -38,8 +41,14 @@ void __interrupt __far ctrlBreakHandler( ) { CtrlBreakDetected = 1; }
 
 void __interrupt __far ctrlCHandler( ) {}
 
+struct JRecvHeader {
+    char filename[12];
+    uint32_t filesize;
+};
+
 int main( int argc, char *argv[] ) {
-  fprintf( stderr, "JRECV v0.1 (c) 2018 Joshua Foster\n\n" );
+  fprintf( stderr, "JRECV v0.1 (c) 2018 Joshua Foster\n" );
+  fprintf( stderr, "Built %s %s", __DATE__, __TIME__ );
 
   // Read command line arguments
   parseArgs( argc, argv );
@@ -72,7 +81,7 @@ int main( int argc, char *argv[] ) {
   TcpSocket *mySocket;
   int8_t rc;
   
-  fprintf( stderr, "Waiting for a connection on port %u. Press [ESC] to abort.\n\n", LclPort );
+  fprintf( stderr, "\nWaiting for a connection on port %u. Press [ESC] to abort.\n", LclPort );
 
   TcpSocket *listeningSocket = TcpSocketMgr::getSocket();
   listeningSocket->listen( LclPort, 0 );
@@ -96,13 +105,9 @@ int main( int argc, char *argv[] ) {
       break;
     }
 
-    if( _bios_keybrd(1) != 0 ) {
-      char c = _bios_keybrd(0);
-
-      if( (c == 27) || (c == 3) ) {
-        rc = -1;
-        break;
-      }
+    if( _bios_keybrd(1) != 0 && _bios_keybrd(0) == KEY_ESC ) {
+      rc = -1;
+      break;
     }
   }
 
@@ -118,8 +123,12 @@ int main( int argc, char *argv[] ) {
 
   uint8_t done = 0;
   uint16_t bytesRead = 0;
+  uint32_t totalBytesWritten = 0;
   uint16_t bytesToRead = WRITE_BUF_SIZE; // Bytes to read from socket
 
+  JRecvHeader header = { 0 };
+  FILE* outfile = 0;
+  
   while( !done ) {
     if( CtrlBreakDetected ) {
       fprintf( stderr, "\nCtrl-Break detected\n" );
@@ -132,15 +141,31 @@ int main( int argc, char *argv[] ) {
     Tcp::drivePackets();
 
     if( mySocket->isRemoteClosed( ) ) done = 1;
-    
+
     uint8_t *packet;
 
-    while ( packet = ((uint8_t *)mySocket->incoming.dequeue( )) ) {
+    while( packet = ((uint8_t *)mySocket->incoming.dequeue()) ) {
 
       IpHeader *ip = (IpHeader *)(packet + sizeof(EthHeader) );
       TcpHeader *tcp = (TcpHeader *)(ip->payloadPtr( ));
-      uint8_t *userData = ((uint8_t *)tcp)+tcp->getTcpHlen( );
-      uint16_t len = ip->payloadLen( ) - tcp->getTcpHlen( );
+      uint8_t *userData = ((uint8_t *)tcp)+tcp->getTcpHlen();
+      uint16_t len = ip->payloadLen() - tcp->getTcpHlen();
+
+      if( !header.filesize ) {
+        // Read file name (first 12 bytes, maybe null-terminated) and file size (bytes 13-16)
+        memcpy( (char*)&header, (const char*)userData, sizeof( JRecvHeader ));
+        
+        char filename[13];
+        strncpy( filename, header.filename, 12 );
+        filename[12] = '\0';
+        header.filesize = ntohl( header.filesize );
+
+        fprintf( stderr, "\nReceiving %s (%lu bytes)\n", header.filename, header.filesize );
+        outfile = fopen( header.filename, "wb" );
+
+        userData += sizeof( JRecvHeader );
+        len -= sizeof( JRecvHeader );
+      }
 
       // Copy to our filebuffer.  If we are close to the end of
       // the file buffer, write it out.
@@ -148,13 +173,20 @@ int main( int argc, char *argv[] ) {
       memcpy( fileWriteBuffer+bytesRead, userData, len );
       bytesRead += len;
 
+
       // Get rid of the incoming buffer as soon as possible.
       Buffer_free( packet );
 
       if( (WRITE_BUF_SIZE - bytesRead) < MyMTU ) {
-        if( write( 1, fileWriteBuffer, bytesRead ) != bytesRead ) {
+        //if( write( 1, fileWriteBuffer, bytesRead ) != bytesRead ) {
+        if( fwrite( fileWriteBuffer, 1, bytesRead, outfile ) != bytesRead ) {
           fprintf( stderr, "\nwrite() failed!" );
           break;
+        }
+        else {
+          totalBytesWritten += bytesRead;
+          uint16_t pct = totalBytesWritten*100/header.filesize;
+          fprintf( stderr, "\n%u%% (%lu bytes)", pct, totalBytesWritten );
         }
         bytesRead = 0;
       }
@@ -170,25 +202,27 @@ int main( int argc, char *argv[] ) {
         if ( ekey == 45 ) { // Alt-X
           done = 1;
         }
-        else if ( ekey == 35 ) { // Alt-H
-          fprintf( stderr, "\JRECV: Press Alt-X to exit\n\n" );
-        }
       }
     }
   }
 
   if( bytesRead ) {
-    if( write( 1, fileWriteBuffer, bytesRead ) != bytesRead ) {
+    //if( write( 1, fileWriteBuffer, bytesRead ) != bytesRead ) {
+    if( fwrite( fileWriteBuffer, 1, bytesRead, outfile ) != bytesRead ) {
       fprintf( stderr, "\nwrite() failed!" );
     }
   }
+
+  fclose( outfile );
 
   mySocket->close();
 
   TcpSocketMgr::freeSocket( mySocket );
 
+  fprintf( stderr, "\n\nSaved %s (%lu bytes)\n\n", header.filename, header.filesize );
+  
   shutdown( 0 );
-
+  
   return 0;
 }
 
@@ -207,11 +241,7 @@ static void parseArgs( int argc, char *argv[] ) {
   int i=1;
   for ( ; i<argc; i++ ) {
 
-    if ( stricmp( argv[i], "-help" ) == 0 ) {
-      usage();
-    }
-    else if ( stricmp( argv[i], "-port" ) == 0 ) {
-
+    if ( stricmp( argv[i], "-port" ) == 0 ) {
       i++;
       if ( i == argc ) {
         errorMsg( "Need to specify a port to listen on\n" );
@@ -234,9 +264,9 @@ static void shutdown( int rc ) {
   setvect( 0x1b, oldCtrlBreakHandler );
 
   Utils::endStack( );
-  Utils::dumpStats( stderr );
+  //Utils::dumpStats( stderr );
   fclose( TrcStream );
-  exit( rc );
+  if( rc != 0 ) exit( rc );
 }
 
 
