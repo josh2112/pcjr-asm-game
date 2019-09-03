@@ -1,3 +1,6 @@
+; Should see "original video mode 3, new video mode 9" with a green pixel in the top-left corner
+;
+
 [cpu 8086]
 [org 100h]
 
@@ -19,21 +22,24 @@ int 10h                      ; Call INT10h fn 0 to change the video mode
 
 ; Format originalVideoMode to a string and print it. Nothing new here!
 print str_orgVideoMode
-intToString [originalVideoMode]
+byteToString [originalVideoMode]
 println buf16
 
 ; Do the same thing with the new video mode (9).
 print str_newVideoMode
-intToString 9
+wordToString 9
 println buf16
 
 ; Print 'Press any key to continue'
 println str_pressAnyKey
 
+; Make the first 2 pixels green (write 0xaa to mem 0xb800)
+; JAF: Figure this out!  0xb000 is supposed to be the video base address in mode 9!
+; Is it because 
 mov ax, 0xb800
 mov es, ax
 xor si, si
-mov byte [es:si], 0aah
+mov byte [es:si], 0xaa
 
 ; Call INT21h fn 8 (character input without echo) to wait for a keypress
 waitForAnyKey
