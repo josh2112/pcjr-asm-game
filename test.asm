@@ -33,7 +33,7 @@ println buf16
 ; Print 'Press any key to continue'
 println str_pressAnyKey
 
-; Make the first 2 pixels green (write 0xaa to mem 0xb800)
+; Make the first 2 pixels green (write 0xaa to mem 0xb8000)
 mov ax, 0xb800
 mov es, ax
 xor si, si
