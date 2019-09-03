@@ -38,3 +38,8 @@ Rendering loop - to be performed each time a sprite moves:
    - If sprite pixel is transparent or has a lower priority than corresponding base pixel, skip it.
    - Else, copy it over. 
  - Compute bounding rectangles of sprite previous and current location for each sprite; copy each from compositor to framebuffer.
+
+Real PCjr notes
+---------------
+
+My PCjr has only 192K memory hardware-detected. Must boot with "device=pcjrmem.com" in config.sys to get it all recognized by DOS. JRECV.EXE needs it as well. BUT... booting with this messes up video memory alignments? Mode-switching into the graphics mode actually stays in a text mode (a character is written to the screen instead of a pixel)
