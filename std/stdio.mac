@@ -26,9 +26,16 @@ section .text
 	print str_crlf
 %endmacro
 
-%macro intToString 2
+%macro wordToString 2
   mov di, %1
   mov ax, %2
+  call int_to_string
+%endmacro
+
+%macro byteToString 2
+  mov di, %1
+  mov ax, %2
+  xor ah, ah
   call int_to_string
 %endmacro
 
