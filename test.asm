@@ -34,8 +34,6 @@ println buf16
 println str_pressAnyKey
 
 ; Make the first 2 pixels green (write 0xaa to mem 0xb800)
-; JAF: Figure this out!  0xb000 is supposed to be the video base address in mode 9!
-; Is it because 
 mov ax, 0xb800
 mov es, ax
 xor si, si
