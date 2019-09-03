@@ -4,7 +4,7 @@ import os, sys
 import argparse
 import socket
 
-DEST = ("192.168.1.5", 7000)
+DEST = ("10.0.0.15", 7000)
 
 # class JSender:
 #     def __init__( self, serial ):
