@@ -21,12 +21,11 @@ Rendering scheme
 Scene resolution is actually 160x200, but each horizontal pixel is doubled to make 320x200
  - This is convenient because 320x200x16 encodes 2 pixels per byte.
 
-Base page (0x8000): Contains color data interleaved with priority. Each byte contains priority (high byte) and color (low byte) for the next 2 pixels.
- - pri/skel (high byte) is 0 (for skeleton line) or 1-15 (for priority)
-
-Compositor page (0x10000): Buffer area for new frame to be drawn. When drawing is complete this area is copied to the framebuffer.
-
-Framebuffer page (0x18000): Video memory.
+Use three 32K pages:
+ - Base page (0x8000): Contains color data interleaved with priority. Each byte contains priority (high byte) and color (low byte) for the next 2 pixels.
+   - pri/skel (high byte) is 0 (for skeleton line) or 1-15 (for priority)
+ - Compositor page (0x10000): Buffer area for new frame to be drawn. When drawing is complete this area is copied to the framebuffer.
+ - Framebuffer page (0x18000): Video memory.
 
 Each 'room' is 316x166 with a 2-pixel border on each side and a 1-pixel border on top and bottom.
  - The remaining 200-166-2 = 32 vertical pixels are for 4 rows of text at the bottom
@@ -43,3 +42,13 @@ Real PCjr notes
 ---------------
 
 My PCjr has only 192K memory hardware-detected. Must boot with "device=pcjrmem.com" in config.sys to get it all recognized by DOS. JRECV.EXE needs it as well. BUT... booting with this messes up video memory alignments? Mode-switching into the graphics mode actually stays in a text mode (a character is written to the screen instead of a pixel)
+
+device=pcjrmem.com  (with /c or /e)
+No option is 16k, /e is 32k, /c is 96k
+
+Try setting mode manually
+0x11011 to Mode Control Register 1
+
+From tech manual:
+ - 128K memory maps from 0 to 128K. If only 64K is installed, 0-64K and 64K-128K map to the same memory (base 64K is "mirrored")
+ 
