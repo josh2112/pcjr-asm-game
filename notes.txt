@@ -55,3 +55,7 @@ From tech manual:
 ON ACTUAL PCjr HARDWARE:
  - Without PCJRMEM: mode-switching works, writing to 0xB8000 works and initial page registers are both 6!
  - With PCJRMEM: writing to 0xB8000 writes a character (instead of pixel) and initial page registers are 2
+
+ EPS 7-12
+  ep7: only draws first 2 sets of scanlines (not 3 and 4) but square does move around slowly
+  ep8: looks same as ep7 but flickers; moved exactly once then no longer responds to KB input

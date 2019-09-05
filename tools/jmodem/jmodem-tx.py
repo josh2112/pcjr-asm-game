@@ -33,6 +33,10 @@ class JModemSender:
                     return
             self.paknum += 1
     
+    # A packet is 134 bytes, formatted [S][PN][TP][data][C] where:
+    #   S = SOH (1 byte), PN = packet num (2 bytes), TP = total packets (2 bytes),
+    #   data = 128 bytes of file data (padded with zeroes if less),
+    #   C = checksum (sum mod 256 of previous 133 bytes)
     def make_packet( self, file ):
         packet = [SOH]
         packet += self.paknum.to_bytes( 2, 'little' )
