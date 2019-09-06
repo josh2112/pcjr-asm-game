@@ -3,8 +3,7 @@
 #
 ifeq ($(OS),Windows_NT)
 	NASM="$(USERPROFILE)\AppData\Local\bin\NASM\nasm"
-	DOSBOX="tools\EmuCR-Dosbox-r4059\dosbox"
-	DOSBOX_DBG="..\dosbox-svn\dosbox\visualc_net\Release\dosbox"
+	DOSBOX="..\pcjr-asm-game-tools\tools\EmuCR-Dosbox-r4059\dosbox.exe"
 	RM=cmd \/C del
 else
 	RM=rm
@@ -26,16 +25,13 @@ SRCS=std/stdlib.asm std/320x200x16.asm std/stdio.asm input.asm renderer.asm
 DEPS=$(MACROS) $(SRCS)
 
 NASM_OPTS=-f bin -l $(TARGET).lst
-DOSBOX_OPTS=-conf dosbox.conf
+DOSBOX_OPTS=-conf ..\pcjr-asm-game-tools\dosbox.conf
 
 $(TARGET.COM): $(TARGET).asm $(DEPS)
 	$(NASM) $(NASM_OPTS) -o $@ $<
 
 run: $(TARGET.COM)
 	$(DOSBOX) $(DOSBOX_OPTS) $^
-
-debug: $(TARGET.COM)
-	$(DOSBOX_DBG) $(DOSBOX_OPTS) $^
 
 clean:
 	$(RM) $(TARGET.COM)
