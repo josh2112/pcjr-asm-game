@@ -2,8 +2,8 @@
 # Makefile for PCjr ASM Game project
 #
 ifeq ($(OS),Windows_NT)
-	NASM="$(USERPROFILE)\AppData\Local\NASM\nasm"
-	DOSBOX="$(ProgramFiles)\DOSBox-0.74\dosbox"
+	NASM="$(USERPROFILE)\AppData\Local\bin\NASM\nasm"
+	DOSBOX="..\pcjr-asm-game-tools\tools\EmuCR-Dosbox-r4059\dosbox"
 	RM=cmd \/C del
 else
 	NASM=nasm
@@ -24,7 +24,7 @@ SRCS=std/stdlib.asm std/320x200x16.asm std/video.asm input.asm
 DEPS=$(MACROS) $(SRCS)
 
 NASM_OPTS=-f bin -l $(TARGET).lst
-DOSBOX_OPTS=-conf dosbox.conf
+DOSBOX_OPTS=-conf ..\pcjr-asm-game-tools\dosbox.conf
 
 $(TARGET.COM): $(TARGET).asm $(DEPS)
 	$(NASM) $(NASM_OPTS) -o $@ $<
