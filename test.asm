@@ -54,7 +54,7 @@ call cls
 game_loop:
   call waitForRetrace
 
-  mov ax, 0xb800
+  mov ax, 0x1800
   mov es, ax
   mov al, 0x44
   xor di, di
@@ -76,7 +76,7 @@ game_loop:
   push word [player_x]
   call draw_rect             ; Draw the player graphic
 
-  mov ax, 0xb800
+  mov ax, 0x1800
   mov es, ax
   mov al, 0xee
   xor di, di

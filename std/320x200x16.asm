@@ -12,7 +12,7 @@ putpixel:
   shr dx, 1       ; remainder.
   and ax, 0b11    ; AX = bank number (0-3), DX = row within bank
 
-  ; Set the segment address to the right bank (0xB8000 + bank start)
+  ; Set the segment address to the right bank (0x18000 + bank start)
   mov cl, 9       ; Faster alternative to multiplying AX by the
   shl ax, cl      ; bank width (0x200): shift left by 9.
   add ax, 0x1800  ; Offset by start of video memory

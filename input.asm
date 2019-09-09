@@ -48,20 +48,14 @@ handle_int9h:
 
 .keyPressed:
   mov bx, ax
-  mov byte [keyboardState+bx], 1  ; Turn on that key in the buffer
+  mov byte [cs:keyboardState+bx], 1  ; Turn on that key in the buffer
   jmp .done
 .keyReleased:
   and al, 0x7f                      ; Remove key-released flag
   mov bx, ax
-  mov byte [keyboardState+bx], 0  ; Turn off that key in the buffer
+  mov byte [cs:keyboardState+bx], 0  ; Turn off that key in the buffer
   jmp .done
 .done:
-  ; Clear keyboard IRQ if pending
-  in al, 61h     ; Grab keyboard state
-  or al, 0x80    ; Flip on acknowledgement bit
-  out 61h, al    ; Send it
-  and al, 0x7f   ; Restore previous value
-  out 61h, al    ; Send it again
   ; Signal end-of-interrupt
   mov al, 0x20
   out 20h, al
