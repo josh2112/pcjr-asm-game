@@ -15,7 +15,7 @@ putpixel:
   push dx
   mul cx          ; AX = bank memory offset
   pop dx
-  add ax, 0b800h  ; offset by start of video memory
+  add ax, 01800h  ; offset by start of video memory
   mov es, ax      ; ES = absolute start-of-bank address
 
   mov ax, dx
@@ -58,7 +58,7 @@ cls:
   or dl, dh    ; Combine the nibbles
   mov dh, dl
 
-  mov ax, 0xb800
+  mov ax, 0x1800
   mov es, ax     ; Set ES to point to the framebuffer
   xor di, di     ; Set DI to 0 (STOSW will copy to ES:DI)
   mov ax, dx
