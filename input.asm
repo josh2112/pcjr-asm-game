@@ -11,7 +11,7 @@
 ;   - Handle cursor keys to move player around.
 ;   - Handle ENTER as submit command -- read all chars on input line into a buffer then process it
 ; - Otherwise as long as cursor column is between 2 (start of input line) and 39 (end of input line):
-;   - Handle backspace (which only backs up the cursor) and process as backspace, space, backspace.
+;   - Handle backspace.
 ;   - Pass any other key straight through.
 process_keys_2:
   mov ah, 1     ; Check for keystroke.  If ZF is set, no keystroke.
@@ -86,6 +86,8 @@ toggle_walk:
     mov byte [player_walk_dir], 0
     ret
 
+; Backspace only backs up the cursor. To actually clear the character we'll
+; send three characters: backspace, space, backspace.
 process_key_backspace:
   mov ax, 0x0e08
   int 10h
