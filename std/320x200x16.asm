@@ -12,10 +12,10 @@ putpixel:
   shr dx, 1       ; remainder.
   and ax, 0b11    ; AX = bank number (0-3), DX = row within bank
 
-  ; Set the segment address to the right bank (0xB8000 + bank start)
+  ; Set the segment address to the right bank (0x18000 + bank start)
   mov cl, 9       ; Faster alternative to multiplying AX by the
   shl ax, cl      ; bank width (0x200): shift left by 9.
-  add ax, 0xb800  ; Offset by start of video memory
+  add ax, 0x1800  ; Offset by start of video memory
   mov es, ax      ; ES = absolute start-of-bank address
 
   mov ax, dx
@@ -68,7 +68,7 @@ cls:
   or dl, dh    ; Combine the nibbles
   mov dh, dl
 
-  mov ax, 0xb800
+  mov ax, 0x1800
   mov es, ax     ; Set ES to point to the framebuffer
   xor di, di     ; Set DI to 0 (STOSW will copy to ES:DI)
   mov ax, dx
@@ -93,7 +93,7 @@ draw_rect:
   mov ah, 0
   mov si, ax
 
-  mov di, 0xb800
+  mov di, 0x1800
   mov es, di       ; Framebuffer segment in ES
 
   mov cx, [bp+10]  ; This CX will count down the rows
@@ -154,7 +154,7 @@ draw_icon:
 
   mov si, [bp+4]
   
-  mov di, 0xb800
+  mov di, 0x1800
   mov es, di       ; Framebuffer segment in ES
   
   mov cx, [bp+8]   ; This CX will count down the rows
