@@ -84,9 +84,9 @@ restore_keyboard_handler:
   cli
   xor di, di
   mov es, di
-  mov dx, [originalInt9h]
+  mov dx, [cs:originalInt9h]
   mov word [es:9h*4], dx
-  mov dx, [originalInt9h+2]
+  mov dx, [cs:originalInt9h+2]
   mov word [es:9h*4+2], dx
   sti
   ret
@@ -101,22 +101,22 @@ read_file:
   push bp
   mov bp, sp
 
-  mov ax, 0x3d00
-  mov dx, [bp+4]
+  mov ax, 0x3d00   ; Call INT 21h, 3D (open file)
+  mov dx, [bp+4]   ; with DX as the path
   int 21h
 
-  mov bx, ax
-  mov ax, 0x3f00
-  mov cx, [bp+6]
+  mov bx, ax       ; Move newly-opened file handle to BX
+  mov ax, 0x3f00   ; Call INT 21h, 3F (read from file)
+  mov cx, [bp+6]   ; with CX = file size...
   xor dx, dx
-  push ds
+  push ds          ; (save DS first)
   mov di, [bp+8]
-  mov ds, di
+  mov ds, di       ; and DS:DX as the read buffer
   int 21h
   pop ds
 
-  mov ax, 0x3e00
-  int 21h
+  mov ax, 0x3e00  ; Call INT21h, 3E to close the file
+  int 21h         ; (file handle still in BX)
 
   pop bp
   ret 6
