@@ -24,7 +24,7 @@ SRCS=std/stdlib.asm std/320x200x16.asm std/video.asm input.asm
 DEPS=$(MACROS) $(SRCS)
 
 NASM_OPTS=-f bin -l $(TARGET).lst
-DOSBOX_OPTS=-conf ..\pcjr-asm-game-tools\dosbox.conf
+DOSBOX_OPTS=-conf "..\pcjr-asm-game-tools\dosbox.conf"
 
 $(TARGET.COM): $(TARGET).asm $(DEPS)
 	$(NASM) $(NASM_OPTS) -o $@ $<
