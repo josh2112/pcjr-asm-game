@@ -76,29 +76,24 @@ handle_int9h:
 
 ; Redirect INT9h to the handle_int9h procedure.
 install_keyboard_handler:
-  cli                               ; Disable interrupts
-  xor ax, ax
-  mov es, ax                        ; Set ES to 0
-  mov dx, [es:9h*4]                 ; Copy the offset of the INT 9h handler
-  mov [oldInt9h], dx                ; Store it in oldInt9h
-  mov dx, [es:9h*4+2]               ; Then copy the segment
-  mov [oldInt9h+2], dx              ; Store it in oldInt9h + 2
-  mov word [es:9h*4], handle_int9h  ; Install the new handle - first the offset,
-  mov word [es:9h*4+2], cs          ; Then the segment
-  sti                               ; Reenable interrupts
+  mov ax, 0x3509             
+  int 21h                    ; Get current INT9 handler as ES:BX
+  mov [cs:oldInt9h],bx       ; Save offset and segment to oldInt9h
+  mov [cs:oldInt9h+2],es
+  push cs
+  pop ds                     ; Set DS:DX to segment:offset of new
+  mov dx, handle_int9h       ; handler (CS:handle_int9h)
+  mov ax, 0x2509             ; Install new INT9 hander
+  int 21h
   ret
 
 
 ; Restore default INT9h processing.
 restore_keyboard_handler:
-  cli
-  xor ax, ax
-  mov es, ax
-  mov dx, [oldInt9h]
-  mov word [es:9h*4], dx
-  mov dx, [oldInt9h+2]
-  mov word [es:9h*4+2], dx
-  sti
+  mov ds, [cs:oldInt9h+2]     ; Set DS:DX to original handler
+  mov dx, [cs:oldInt9h]
+  mov ax, 0x2509              ; Install new INT9 hander
+  int 21h
   ret
 
 %endif ; INPUT_ASM
