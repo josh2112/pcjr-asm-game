@@ -14,7 +14,7 @@ putpixel:
   push dx
   mul cx          ; AX = bank memory offset
   pop dx
-  add ax, 0b800h  ; offset by start of video memory
+  add ax, 01800h  ; offset by start of video memory
   mov es, ax      ; ES = absolute start-of-bank address
 
   mov ax, dx
