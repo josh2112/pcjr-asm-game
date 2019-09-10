@@ -167,7 +167,6 @@ draw_icon:
   
   mov cx, [bp-4]     ; CX = icon height
   add si, 4          ; advance SI to start of icon data
-  
 
 .copyLine:
   ; Compute which row number we're writing to
@@ -216,6 +215,6 @@ draw_icon:
   pop es
   mov sp, bp
   pop bp
-  ret 6
+  ret 8
 
 %endif ; _320X200X16_ASM

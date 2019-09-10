@@ -1,0 +1,32 @@
+
+Ep 12:
+ - Double-buffering (non-interleaved compositor)
+   * Fns for drawing solid rectangle and icon to compositor
+   - Fn blt_compositor_to_framebuffer
+- Each loop:
+    - Erase (draw solid rectangle over) player current pos in compositor
+    - Move player
+    - Draw player icon in new pos on compositor
+    - Blt rectangle (player new pos) from compositor to framebuffer
+
+Ep 13:
+ - Triple buffering (no reading files or piority checking yet, just
+   draw some piddly background with setpixel)
+ - Each loop:
+    - Copy rectangle (player current pos) from background to compositor
+    - Move player
+    - Draw player icon in new pos on compositor
+    - Blt rectangle (player new pos) compositor to framebuffer
+
+Ep 14:
+ - DOS INT 21h to read file into background
+ - Priority checking when drawing icon
+
+Ep 15:
+ - Going back to INT 16H keyboard handling (instead of replacing INT 9H handler)
+ - Text I/O area at bottom of screen
+
+TODO:
+ - Try episode-11 without "call waitForRetrace"
+ - Test writing to different pages again 
+ - Simple program to read file directly into framebuffer
