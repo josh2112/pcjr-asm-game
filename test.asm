@@ -68,7 +68,6 @@ mov ax, 0x0582               ; AH = 0x05 (CPU/CRT page registers), AL = 0x82 (se
 mov bx, 0x0600               ; BH = Page 6, matching our FRAMEBUFFER_SEG
 int 10h                      ; Call INT10h fn 0x05 to set CRT page register to 6
 
-
 call install_keyboard_handler
 
 push word [color_bg]
@@ -78,6 +77,13 @@ xor ax, ax
 push ax
 push ax
 call draw_rect             ; Clear the whole compositor to background color
+
+push word [room_height_px]
+push word [room_width_px]
+xor ax, ax
+push ax
+push ax
+call blt_compositor_to_framebuffer
 
 game_loop:
 
@@ -106,10 +112,29 @@ game_loop:
   push ax
   call draw_icon
 
-  push word [room_height_px]
-  push word [room_width_px]
-  xor ax, ax
-  push ax
+  ; Combine player previous and current rect:
+  mov ax, [player_x]
+  mov cx, [player_x_prev]
+  sub cx, ax
+  jns .next1
+    mov ax, [player_x_prev]
+    neg cx
+  .next1:
+  add cx, [player_icon+0]
+
+  mov bx, [player_y]
+  mov dx, [player_y_prev]
+  sub dx, bx
+  jns .next2
+    mov bx, [player_y_prev]
+    neg dx
+  .next2:
+  add dx, [player_icon+2]
+  
+  ; 3) Copy a rectangle covering both player's previous and current locations from compositor to framebuffer
+  push dx
+  push cx
+  push bx
   push ax
   call blt_compositor_to_framebuffer
 
@@ -134,6 +159,5 @@ int 21h
 
 %include 'std/stdio.mac'
 %include 'std/stdlib.asm'
-%include 'std/video.asm'
 %include 'std/320x200x16.asm'
 %include 'input.asm'
