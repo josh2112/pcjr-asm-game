@@ -121,6 +121,7 @@ game_loop:
     neg cx
   .next1:
   add cx, [player_icon+0]
+  inc cx
 
   mov bx, [player_y]
   mov dx, [player_y_prev]
