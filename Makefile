@@ -10,7 +10,7 @@ else
 	RM=rm
 	UNAME_S := $(shell uname -s)
 	ifeq ($(UNAME_S),Darwin)
-		DOSBOX=/Applications/DOSBox.app/Contents/MacOS/DOSBox
+		DOSBOX=/Applications/DOSBox-0.74-3.app/Contents/MacOS/DOSBox
 	else # assume Linux
 		DOSBOX=DISPLAY=:0 dosbox
 	endif

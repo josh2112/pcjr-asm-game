@@ -48,12 +48,12 @@ handle_int9h:
 
 .keyPressed:
   mov bx, ax
-  mov byte [keyboardState+bx], 1  ; Turn on that key in the buffer
+  mov byte [cs:keyboardState+bx], 1  ; Turn on that key in the buffer
   jmp .done
 .keyReleased:
   and al, 0x7f                      ; Remove key-released flag
   mov bx, ax
-  mov byte [keyboardState+bx], 0  ; Turn off that key in the buffer
+  mov byte [cs:keyboardState+bx], 0  ; Turn off that key in the buffer
   jmp .done
 .done:
   ; Clear keyboard IRQ if pending
