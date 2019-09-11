@@ -55,6 +55,10 @@ oldInt9h: resb 4
 
 section .text
 
+; Move stack pointer out of the way so we have free reign of the
+; upper half of memory (64K-128K).
+mov sp, 0x2000
+
 ; Get the initial video mode and save it to [originalVideoMode]
 mov ax, 0x0f00               ; AH <- 0x0f (get video mode)
 int 10h                      ; Call INT10h fn 0x0f which will store the current video mode in AL
