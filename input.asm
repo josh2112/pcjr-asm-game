@@ -71,8 +71,8 @@ handle_int9h:
 install_keyboard_handler:
   mov ax, 0x3509             
   int 21h                    ; Get current INT9 handler as ES:BX
-  mov [cs:oldInt9h],bx       ; Save offset and segment to oldInt9h
-  mov [cs:oldInt9h+2],es
+  mov [oldInt9h],bx       ; Save offset and segment to oldInt9h
+  mov [oldInt9h+2],es
   push cs
   pop ds                     ; Set DS:DX to segment:offset of new
   mov dx, handle_int9h       ; handler (CS:handle_int9h)
@@ -81,10 +81,12 @@ install_keyboard_handler:
   ret
 
 restore_keyboard_handler:
-  mov ds, [cs:oldInt9h+2]     ; Set DS:DX to original handler
-  mov dx, [cs:oldInt9h]
-  mov ax, 0x2509              ; Install new INT9 hander
+  push ds
+  mov dx, [oldInt9h]
+  mov ds, [oldInt9h+2]     ; Set DS:DX to original handler
+  mov ax, 0x2509            ; Install new INT9 hander
   int 21h
+  pop ds
   ret
 
 %endif ; INPUT_ASM

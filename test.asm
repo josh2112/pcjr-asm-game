@@ -9,6 +9,8 @@
 %define key_right 0x4d
 %define key_down 0x50
 
+%include 'std/stdio.mac'
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 section .data
@@ -23,6 +25,8 @@ player_x: dw 160
 player_y: dw 100
 player_x_prev: dw 160
 player_y_prev: dw 100
+
+str_gothere: db "got here$"
 
 keyboardState: times 128 db 0
 
@@ -136,7 +140,6 @@ int 21h
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-%include 'std/stdio.mac'
 %include 'std/stdlib.asm'
 %include 'std/320x200x16.asm'
 %include 'input.asm'
