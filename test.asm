@@ -9,8 +9,6 @@
 %define key_right 0x4d
 %define key_down 0x50
 
-%include 'std/stdio.mac'
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 section .data
@@ -25,8 +23,6 @@ player_x: dw 160
 player_y: dw 100
 player_x_prev: dw 160
 player_y_prev: dw 100
-
-str_gothere: db "got here$"
 
 keyboardState: times 128 db 0
 
@@ -75,7 +71,6 @@ int 10h                      ; Call INT10h fn 0 to change the video mode
 mov ax, 0x0582               ; AH = 0x05 (CPU/CRT page registers), AL = 0x82 (set CRT page register)
 mov bx, 0x0600               ; BH = Page 6, matching our FRAMEBUFFER_SEG
 int 10h                      ; Call INT10h fn 0x05 to set CRT page register to 6
-
 
 call install_keyboard_handler
 
@@ -140,6 +135,7 @@ int 21h
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+%include 'std/stdio.mac'
 %include 'std/stdlib.asm'
 %include 'std/320x200x16.asm'
 %include 'input.asm'
