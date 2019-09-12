@@ -11,7 +11,7 @@ section .data
   FRAMEBUFFER_SEG: dw 0x1800  ; Page 6-7
 
   room_width_px: dw 320
-  room_height_px: db 168
+  room_height_px: dw 168
 
 
 section .text
