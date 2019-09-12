@@ -9,7 +9,7 @@ section .data
   FRAMEBUFFER_SEG: dw 0x1800  ; Page 6-7
 
   room_width_px: dw 320
-  room_height_px: db 200
+  room_height_px: dw 200
 
 section .text
 
