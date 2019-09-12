@@ -9,7 +9,7 @@ section .data
   FRAMEBUFFER_SEG: dw 0x1800  ; Page 6-7
 
   room_width_px: dw 320
-  room_height_px: db 200
+  room_height_px: dw 200
 
 section .text
 
@@ -137,10 +137,9 @@ blt_compositor_to_framebuffer:
   push bp
   mov bp, sp
 
-  push ds            ; Set DS to source and
+  ;push ds            ; Set DS to source and
   push es            ; ES to destination
   mov es, [FRAMEBUFFER_SEG]
-  mov ds, [COMPOSITOR_SEG]
 
   mov cx, [bp+10]   ; # lines to copy
 
@@ -183,13 +182,16 @@ blt_compositor_to_framebuffer:
 
   mov cx, [bp+8]
   shr cx, 1        ; Because each byte encodes 2 pixels
+  push ds
+  mov ds, [COMPOSITOR_SEG]
   rep movsb
+  pop ds
 
   pop cx
   loop .copyLine
 
   pop es
-  pop ds
+  ;pop ds
   pop bp
   ret 8
 

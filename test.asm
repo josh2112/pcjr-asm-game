@@ -68,10 +68,6 @@ mov [originalVideoMode], al  ; Store it into the byte pointed to by originalVide
 mov ax, 0x0009               ; AH <- 0x00 (set video mode), AL <- 9 (new mode)
 int 10h                      ; Call INT10h fn 0 to change the video mode
 
-mov ax, 0x0582               ; AH = 0x05 (CPU/CRT page registers), AL = 0x82 (set CRT page register)
-mov bx, 0x0600               ; BH = Page 6, matching our FRAMEBUFFER_SEG
-int 10h                      ; Call INT10h fn 0x05 to set CRT page register to 6
-
 call install_keyboard_handler
 
 push word [color_bg]
