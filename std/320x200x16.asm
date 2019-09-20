@@ -5,8 +5,8 @@
 
 section .data
 
-  COMPOSITOR_SEG: dw 0x1000   ; Page 4-5
-  FRAMEBUFFER_SEG: dw 0x1800  ; Page 6-7
+  COMPOSITOR_SEG: dw 0x1030
+  FRAMEBUFFER_SEG: dw 0x1800
 
   room_width_px: dw 320
   room_height_px: dw 200

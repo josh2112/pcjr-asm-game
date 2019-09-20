@@ -3,16 +3,16 @@
 #
 ifeq ($(OS),Windows_NT)
 	NASM="$(USERPROFILE)\AppData\Local\bin\NASM\nasm"
-	#DOSBOX="..\pcjr-asm-game-tools\tools\EmuCR-Dosbox-r4059\dosbox"
+	DOSBOX="..\pcjr-asm-game-tools\tools\EmuCR-Dosbox-r4059\dosbox"
 	#DOSBOX="D:\Program Files (x86)\DOSBox-0.74-3\dosbox"
-	DOSBOX="D:\jf334\Documents\Projects\asm-8088\dosbox-svn\dosbox\visualc_net\Release\dosbox"
+	#DOSBOX="D:\jf334\Documents\Projects\asm-8088\dosbox-svn\dosbox\visualc_net\Release\dosbox"
 	RM=cmd \/C del
 else
 	NASM=nasm
 	RM=rm
 	UNAME_S := $(shell uname -s)
 	ifeq ($(UNAME_S),Darwin)
-		DOSBOX=/Applications/DOSBox.app/Contents/MacOS/DOSBox
+		DOSBOX=/Applications/DOSBox-0.74-3.app/Contents/MacOS/DOSBox
 	else # assume Linux
 		DOSBOX=DISPLAY=:0 dosbox
 	endif
