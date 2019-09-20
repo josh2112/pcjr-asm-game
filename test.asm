@@ -230,6 +230,13 @@ move_player:
 ; 1 = water
 ; 15 = room boundary
 bound_player:
+  ; First, check if player_y is 0 (head is hitting top of screen)
+  ; JAF: NOT WORKING, player stops drrawing long before head is at top of screen?
+  cmp word [player_y], 0
+  jne .not_at_top
+  call bounce_back
+  ret
+.not_at_top:
   mov ax, [player_y]
   add ax, [player_icon+2]
   dec ax     ; AX = player foot-line
@@ -248,13 +255,13 @@ bound_player:
     xor ah, ah
     mov al, [ds:si]
     ; The priority is the upper 4 bits. We're looking for 0, 1, or 15.
-    ; If we add 0b00010000 (0x10), then shift right by 4, we can just look for
-    ; a number less than 3.
-    add al, 0x10
+    ; If we shift right by 4 and add 1, we're now looking for 1, 2, or 0
+    ; (i.e. < 3)
     shr al, 1
     shr al, 1
     shr al, 1
     shr al, 1
+    inc al
     cmp al, 3
     jl .foundBorder
     inc si

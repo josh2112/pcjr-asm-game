@@ -1,7 +1,7 @@
 
-Ep 12:
+(DONE) Ep 12:
  - Double-buffering (non-interleaved compositor)
-   * Fns for drawing solid rectangle and icon to compositor
+   - Fns for drawing solid rectangle and icon to compositor
    - Fn blt_compositor_to_framebuffer
 - Each loop:
     - Erase (draw solid rectangle over) player current pos in compositor
