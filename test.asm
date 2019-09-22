@@ -35,26 +35,26 @@ section .data
   player_x_prev: dw 200
   player_y_prev: dw 100
 
-  player_icon: dw 14, 16
-    db 000h, 000h, 0eeh, 0eeh, 0eeh, 000h, 000h ; 1
-    db 000h, 000h, 088h, 0eeh, 088h, 000h, 000h ; 2
-    db 000h, 000h, 0eeh, 0eeh, 0eeh, 000h, 000h ; 3
-    db 000h, 000h, 0eeh, 088h, 0eeh, 000h, 000h ; 4
+player_icon: dw 14, 16
+  db 0x00, 0x00, 0xee, 0xee, 0xee, 0x00, 0x00 ; 1
+  db 0x00, 0x00, 0x88, 0xee, 0x88, 0x00, 0x00 ; 2
+  db 0x00, 0x00, 0xee, 0xee, 0xee, 0x00, 0x00 ; 3
+  db 0x00, 0x00, 0xee, 0x88, 0xee, 0x00, 0x00 ; 4
     
-    db 000h, 000h, 0eeh, 0eeh, 0eeh, 000h, 000h ; 5
-    db 000h, 000h, 000h, 0eeh, 000h, 000h, 000h ; 6
-    db 0eeh, 0aah, 0aah, 0aah, 0aah, 0aah, 0eeh ; 7
-    db 0eeh, 0aah, 0aah, 0aah, 0aah, 0aah, 0eeh ; 8
+  db 0x00, 0x00, 0xee, 0xee, 0xee, 0x00, 0x00 ; 5
+  db 0x00, 0x00, 0x00, 0xee, 0x00, 0x00, 0x00 ; 6
+  db 0xee, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xee ; 7
+  db 0xee, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xee ; 8
     
-    db 000h, 000h, 0aah, 0aah, 0aah, 000h, 000h ; 9
-    db 000h, 000h, 0aah, 0aah, 0aah, 000h, 000h ; 10
-    db 000h, 000h, 022h, 022h, 022h, 000h, 000h ; 11
-    db 000h, 000h, 033h, 033h, 033h, 000h, 000h ; 12
+  db 0x00, 0x00, 0xaa, 0xaa, 0xaa, 0x00, 0x00 ; 9
+  db 0x00, 0x00, 0xaa, 0xaa, 0xaa, 0x00, 0x00 ; 10
+  db 0x00, 0x00, 0x22, 0x22, 0x22, 0x00, 0x00 ; 11
+  db 0x00, 0x00, 0x33, 0x33, 0x33, 0x00, 0x00 ; 12
     
-    db 000h, 000h, 033h, 000h, 033h, 000h, 000h ; 13
-    db 000h, 000h, 033h, 000h, 033h, 000h, 000h ; 14
-    db 000h, 000h, 033h, 000h, 033h, 000h, 000h ; 15
-    db 000h, 066h, 066h, 000h, 066h, 066h, 000h ; 16
+  db 0x00, 0x00, 0x33, 0x00, 0x33, 0x00, 0x00 ; 13
+  db 0x00, 0x00, 0x33, 0x00, 0x33, 0x00, 0x00 ; 14
+  db 0x00, 0x00, 0x33, 0x00, 0x33, 0x00, 0x00 ; 15
+  db 0x00, 0x66, 0x66, 0x00, 0x66, 0x66, 0x00 ; 16
 
 section .bss
 
@@ -96,25 +96,19 @@ mov ax, path_room1
 push ax
 call read_file  ; read "room1.bin" into BACKGROUND_SEG
 
-mov ax, [room_height_px]
-push ax
-mov ax, [room_width_px]
-push ax
+push word [room_height_px]
+push word [room_width_px]
 xor ax, ax
 push ax
 push ax
 call blt_background_to_compositor
 
-mov ax, [room_height_px]
-push ax
-mov ax, [room_width_px]
-push ax
+push word [room_height_px]
+push word [room_width_px]
 xor ax, ax
 push ax
 push ax
 call blt_compositor_to_framebuffer
-
-;call install_keyboard_handler
 
 ; Move cursor to text window and print a prompt
 xor bx, bx        ; Set page number for cursor move (0 for graphics modes)
