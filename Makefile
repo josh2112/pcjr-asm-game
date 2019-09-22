@@ -33,5 +33,8 @@ $(TARGET.COM): $(TARGET).asm $(DEPS)
 run: $(TARGET.COM)
 	$(DOSBOX) $(DOSBOX_OPTS) $^
 
+debug: $(TARGET.COM)
+	$(DOSBOX) $(DOSBOX_OPTS) -c "mount c: ." -c "mount d: ../pcjr-asm-game-tools" -c "d:\debug\debug.com c:\test.com"
+
 clean:
 	$(RM) $(TARGET.COM)

@@ -62,9 +62,16 @@ section .bss
 
 section .text
 
-; Move stack pointer out of the way so we have free reign of the
-; upper half of memory (64K-128K).
-mov sp, 0x2000
+; Stack management - Move stack pointer down out of the way
+; so we have three 32KB buffer regions free
+mov bx, ss
+mov cl, 4
+shl bx, cl
+mov ax, 0x8000
+sub ax, bx
+mov sp, ax
+xor ax, ax
+push ax
 
 ; Get the initial video mode and save it to [originalVideoMode]
 mov ax, 0x0f00               ; AH = 0x0f (get video mode)

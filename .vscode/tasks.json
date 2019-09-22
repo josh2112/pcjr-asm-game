@@ -4,7 +4,7 @@
     "version": "2.0.0",
     "tasks": [
         {
-            "label": "Build and run",
+            "label": "make run",
             "type": "shell",
             "command": "make run",
             "group": {
@@ -25,7 +25,7 @@
             }
         },
         {
-            "label": "Build and debug",
+            "label": "make debug",
             "type": "shell",
             "command": "make debug",
             "group": "build",
