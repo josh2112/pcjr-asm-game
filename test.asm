@@ -62,6 +62,10 @@ section .bss
 
 section .text
 
+; Move stack pointer out of the way so we have free reign of the
+; upper half of memory (64K-128K).
+mov sp, 0x2000
+
 ; Get the initial video mode and save it to [originalVideoMode]
 mov ax, 0x0f00               ; AH = 0x0f (get video mode)
 int 10h                      ; Call INT10h fn 0x0f which will store the current video mode in AL
@@ -236,7 +240,7 @@ bound_player:
   jne .not_at_top
   call bounce_back
   ret
-.not_at_top:
+  .not_at_top:
   mov ax, [player_y]
   add ax, [player_icon+2]
   dec ax     ; AX = player foot-line
@@ -254,14 +258,14 @@ bound_player:
   .checkPixel:
     xor ah, ah
     mov al, [ds:si]
-    ; The priority is the upper 4 bits. We're looking for 0, 1, or 15.
-    ; If we shift right by 4 and add 1, we're now looking for 1, 2, or 0
-    ; (i.e. < 3)
+    ; The priority is in the top nibble (upper 4 bits). We're looking for 0, 1, or 15.
+    ; If we add 1 to the top nibble and shift it to the lower 4 bits,
+    ; we're now looking for 1, 2, or 0 (i.e. < 3)
+    add al, 0x10
     shr al, 1
     shr al, 1
     shr al, 1
     shr al, 1
-    inc al
     cmp al, 3
     jl .foundBorder
     inc si
@@ -312,4 +316,8 @@ ypos_to_priority:
   pop bx
   xor ah, ah
   add ax, 2
+  cmp ax, 4
+  jge .done
+  mov ax, 4
+.done:
   ret

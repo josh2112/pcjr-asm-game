@@ -197,7 +197,7 @@ draw_icon:
   mov es, [BACKGROUND_SEG]
   mov bl, [es:di]
   mov cl, 4
-  shr bl, cl
+  shr bl, cl    ; Get the priority into BL
   pop cx
   pop es
   cmp bl, [bp+6]
