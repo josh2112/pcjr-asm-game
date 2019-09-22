@@ -70,6 +70,9 @@ int 10h                      ; Call INT10h fn 0 to change the video mode
 
 call install_keyboard_handler
 
+; TODO: Change this to take a framebuffer location
+; Need to draw on BACKGROUND_SEG here, then on COMPOSITOR_SEG later
+
 push word [color_bg]
 push word [room_height_px]
 push word [room_width_px]
@@ -77,6 +80,9 @@ xor ax, ax
 push ax
 push ax
 call draw_rect             ; Clear the whole compositor to background color
+
+; TODO: draw some stuff on BACKGROUND_SEG and copy it
+; over to COMPOSITOR_SEG
 
 push word [room_height_px]
 push word [room_width_px]
@@ -97,7 +103,8 @@ game_loop:
 
   call process_key           ; Do something with the key
 
-  ; 1) Clear the player's previous location in the compositor to the background color  
+  ; 1) Clear the player's previous location in the compositor to the background color 
+; TODO: Instead, copy background rectangle to compositor 
   push word [color_bg]
   push word [player_icon+2]
   push word [player_icon+0]
@@ -153,7 +160,7 @@ xor ah, ah
 int 10h
 
 ; Exit the program
-mov ax, 4c00h
+mov ax, 0x4c00
 int 21h
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
