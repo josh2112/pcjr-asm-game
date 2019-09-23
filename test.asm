@@ -47,6 +47,9 @@ player_icon: dw 14, 16
   db 0x00, 0x00, 0x33, 0x00, 0x33, 0x00, 0x00 ; 15
   db 0x00, 0x66, 0x66, 0x00, 0x66, 0x66, 0x00 ; 16
 
+rect1: dw 40, 40, 120, 60, 12
+rect2: dw 120, 70, 120, 60, 5
+
 section .bss
 
 oldInt9h: resb 4
@@ -70,19 +73,34 @@ int 10h                      ; Call INT10h fn 0 to change the video mode
 
 call install_keyboard_handler
 
-; TODO: Change this to take a framebuffer location
-; Need to draw on BACKGROUND_SEG here, then on COMPOSITOR_SEG later
-
 push word [color_bg]
 push word [room_height_px]
 push word [room_width_px]
 xor ax, ax
 push ax
 push ax
-call draw_rect             ; Clear the whole compositor to background color
+call draw_rect             ; Clear the whole background buffer to background color
 
-; TODO: draw some stuff on BACKGROUND_SEG and copy it
-; over to COMPOSITOR_SEG
+push word [rect1+8]
+push word [rect1+6]
+push word [rect1+4]
+push word [rect1+2]
+push word [rect1]
+call draw_rect             ; Draw a red rectangle onto the background buffer
+
+push word [rect2+8]
+push word [rect2+6]
+push word [rect2+4]
+push word [rect2+2]
+push word [rect2]
+call draw_rect             ; Draw a brown rectangle onto the background buffer
+
+push word [room_height_px]
+push word [room_width_px]
+xor ax, ax
+push ax
+push ax
+call blt_background_to_compositor ; Copy whole background to compositor
 
 push word [room_height_px]
 push word [room_width_px]
@@ -103,20 +121,18 @@ game_loop:
 
   call process_key           ; Do something with the key
 
-  ; 1) Clear the player's previous location in the compositor to the background color 
-; TODO: Instead, copy background rectangle to compositor 
-  push word [color_bg]
+  ; 1) Copy rectangle covering player's previous location from background to compositor
   push word [player_icon+2]
   push word [player_icon+0]
   push word [player_y_prev]
   push word [player_x_prev]
-  call draw_rect
+  call blt_background_to_compositor
 
   ; 2) Draw the player icon in its new location in the compositor
   push word [player_y]
   push word [player_x]
   mov ax, player_icon
-  push ax
+  push ax                ; Pointer to player icon W,H
   call draw_icon
 
   ; Combine player previous and current rect:

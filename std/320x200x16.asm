@@ -14,31 +14,67 @@ section .data
 
 section .text
 
+; blt_background_to_compositor( x, y, w, h )
+; Copies a rectangle of background buffer data to the compositor.
+; NOTE: X and W must be even!
+; Args:
+;   bp+4 = x, bp+6 = y, bp+8 = w, bp+10 = h
+blt_background_to_compositor:
+  push bp
+  mov bp, sp
+
+  push ds            ; Set DS to source and
+  push es            ; ES to destination
+  mov es, [COMPOSITOR_SEG]
+  mov ds, [BACKGROUND_SEG]
+
+  mov cx, [bp+10]   ; # lines to copy
+  
+.copyLine:
+  ; Compute which row number we're writing to
+  mov ax, [bp+10] ; Start with rect height
+  sub ax, cx      ; Subtract countdown to give us rect row
+  add ax, [bp+6]  ; Add Y location to rect row number
+  
+  ; Compute starting byte offset for this location
+  ; DI = (AX * 320 + x) / 2
+  mov bx, [cs:room_width_px]
+  mul bx           ; AX *= 320
+  add ax, [bp+4]   ; ... + x
+  shr ax, 1        ; ... / 2
+  mov si, ax
+  mov di, ax
+
+  push cx
+  mov cx, [bp+8]
+  shr cx, 1        ; Because each byte encodes 2 pixels
+
+  rep movsb        ; Copy the whole line from DS:SI to ES:DI
+
+  pop cx
+  loop .copyLine
+
+  pop es          ; Restore our segment registers
+  pop ds
+  pop bp
+  ret 8
+
+
 ; Puts color index DL in the pair of pixels specified by BX,AX (x,y)
 ; Clobbers AX, CX, DX
-putpixel:
+putpixel_bg:
   push dx         ; Save the color because we need DX for MUL and DIV
-  mov dx, ax      ; Faster alternative to dividing AX by 4: shift
-  shr dx, 1       ; right twice for quotient, mask with 0b11 for
-  shr dx, 1       ; remainder.
-  and ax, 0b11    ; AX = bank number (0-3), DX = row within bank
+  push bx
+  ; Compute byte offset for this location
+  ; DI = (AX * 320 + BX) / 2
+  mov bx, [cs:room_width_px]
+  mul bx           ; AX *= 320
+  pop bx
+  add ax, bx   ; ... + x
+  shr ax, 1        ; ... / 2
+  mov di, ax
+  mov es, [BACKGROUND_SEG]
 
-  ; Set the segment address to the right bank (0x18000 + bank start)
-  mov cl, 9       ; Faster alternative to multiplying AX by the
-  shl ax, cl      ; bank width (0x200): shift left by 9.
-  add ax, 0x1800  ; Offset by start of video memory
-  mov es, ax      ; ES = absolute start-of-bank address
-
-  mov ax, dx
-  ; Now BX is the pixel column (x) and AX is the row (y) within the bank
-
-  ; Calc byte index of pixel: AX = (AX * 320 + BX) / 2
-  mov cx, 320
-  mul cx
-  add ax, bx
-  shr ax, 1
-
-  mov di, ax        ; Put byte index in string-source register
   mov al, [es:di]   ; Pull the pixel pair out into AL
 
   pop dx            ; Get our color back in DX
@@ -58,28 +94,10 @@ putpixel:
     mov [es:di], al  ; Push the updated pixel pair back into memory
     ret
 
-; Fills the framebuffer with the color indexed by the low nibble of DL
-cls:
-  ; Copy the low nibble of DL to the high nibble
-  and dl, 0x0f ; Clear the high nibble
-  mov dh, dl   ; Make a copy in DH
-  mov cl, 4
-  shl dh, cl   ; Shift DH left 4 bits (make the low nibble the high nibble)
-  or dl, dh    ; Combine the nibbles
-  mov dh, dl
-
-  mov ax, 0x1800
-  mov es, ax     ; Set ES to point to the framebuffer
-  xor di, di     ; Set DI to 0 (STOSW will copy to ES:DI)
-  mov ax, dx
-  mov cx, 0x4000 ; Fill 32KB (0x4000 16-bit words)
-  rep stosw      ;
-
-  ret
 
 ; draw_rect( x, y, w, h, color )
 ; Draws a colored rectangle of pixels of the given size at the given location
-; to the compositor.
+; to the background.
 ; Args:
 ;   bp+4 = x, bp+6 = y,
 ;   bp+8 = w, bp+10 = h,
@@ -94,7 +112,7 @@ draw_rect:
   xor al, [bp+12]
   mov si, ax  ; Color in SI
 
-  mov di, [COMPOSITOR_SEG]
+  mov di, [BACKGROUND_SEG]
   mov es, di       ; Compositor segment in ES
 
   mov cx, [bp+10]  ; This CX will count down the rows
