@@ -147,11 +147,11 @@ game_loop:
   add ax, [player_icon+2]
   dec ax
   call ypos_to_priority  ; AX = priority of player (taken at foot line)
-  mov bx, player_icon    ; BX = pointer to player icon W,H
   push word [player_y]
   push word [player_x]
-  push ax
-  push bx
+  push ax                ; Push prioirity calculated earlier
+  mov ax, player_icon    
+  push ax                ; Pointer to player icon W,H
   call draw_icon
 
   ; Combine player previous and current rect:
