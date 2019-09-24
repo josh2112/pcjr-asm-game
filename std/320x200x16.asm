@@ -7,7 +7,7 @@ section .data
 
   BACKGROUND_SEG: dw 0x860    ; 0x1030 - 32000 bytes = 0x860
   COMPOSITOR_SEG: dw 0x1030   ; 0x18000 - 32000 bytes = 0x10300
-  FRAMEBUFFER_SEG: dw 0x1800  ; FB alway starts at 0x18000
+  FRAMEBUFFER_SEG: dw 0x1800  ; FB always starts at 0x18000
 
   room_width_px: dw 320
   room_height_px: dw 200
@@ -59,40 +59,6 @@ blt_background_to_compositor:
   pop bp
   ret 8
 
-
-; Puts color index DL in the pair of pixels specified by BX,AX (x,y)
-; Clobbers AX, CX, DX
-putpixel_bg:
-  push dx         ; Save the color because we need DX for MUL and DIV
-  push bx
-  ; Compute byte offset for this location
-  ; DI = (AX * 320 + BX) / 2
-  mov bx, [cs:room_width_px]
-  mul bx           ; AX *= 320
-  pop bx
-  add ax, bx   ; ... + x
-  shr ax, 1        ; ... / 2
-  mov di, ax
-  mov es, [BACKGROUND_SEG]
-
-  mov al, [es:di]   ; Pull the pixel pair out into AL
-
-  pop dx            ; Get our color back in DX
-  jc .setLow        ; If AX was odd, carry bit should be set from the right-shift. If so, set the low
-                    ; nibble, otherwise set the high nibble
-  .setHigh:
-    and al, 0x0f    ; Clear the high nibble
-    mov cl, 4
-    shl dl, cl
-    or al, dl       ; Set it from the color index in DL
-    mov [es:di], al  ; Push the updated pixel pair back into memory
-    ret
-
-  .setLow:
-    and al, 0xf0    ; Clear the low nibble
-    or al, dl       ; Set it from the color index in DL
-    mov [es:di], al  ; Push the updated pixel pair back into memory
-    ret
 
 
 ; draw_rect( x, y, w, h, color )

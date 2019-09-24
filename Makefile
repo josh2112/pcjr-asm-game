@@ -3,7 +3,7 @@
 #
 ifeq ($(OS),Windows_NT)
 	NASM="$(USERPROFILE)\AppData\Local\bin\NASM\nasm"
-	DOSBOX="..\pcjr-asm-game-tools\tools\EmuCR-Dosbox-r4059\dosbox"
+    DOSBOX="..\pcjr-asm-game-tools\tools\EmuCR-Dosbox-r4059\dosbox"
 	#DOSBOX="D:\Program Files (x86)\DOSBox-0.74-3\dosbox"
 	#DOSBOX="D:\jf334\Documents\Projects\asm-8088\dosbox-svn\dosbox\visualc_net\Release\dosbox"
 	RM=cmd \/C del
@@ -33,6 +33,9 @@ $(TARGET.COM): $(TARGET).asm $(DEPS)
 
 run: $(TARGET.COM)
 	$(DOSBOX) $(DOSBOX_OPTS) $^
+
+debug: $(TARGET.COM)
+	$(DOSBOX) $(DOSBOX_OPTS) -c "mount c: ." -c "mount d: ../pcjr-asm-game-tools" -c "d:\debug\debug.com c:\test.com"
 
 clean:
 	$(RM) $(TARGET.COM)
