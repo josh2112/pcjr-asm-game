@@ -1,23 +1,4 @@
 
-(DONE) Ep 12:
- - Double-buffering (non-interleaved compositor)
-   - Fns for drawing solid rectangle and icon to compositor
-   - Fn blt_compositor_to_framebuffer
-- Each loop:
-    - Erase (draw solid rectangle over) player current pos in compositor
-    - Move player
-    - Draw player icon in new pos on compositor
-    - Blt rectangle (player new pos) from compositor to framebuffer
-
-Ep 13:
- - Triple buffering (no reading files or piority checking yet, just
-   draw some piddly background with setpixel)
- - Each loop:
-    - Copy rectangle (player current pos) from background to compositor
-    - Move player
-    - Draw player icon in new pos on compositor
-    - Blt rectangle (player new pos) compositor to framebuffer
-
 Ep 14:
  - DOS INT 21h to read file into background
  - Priority checking when drawing icon
