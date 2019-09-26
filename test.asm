@@ -235,8 +235,6 @@ move_player:
 ; 1 = water
 ; 15 = room boundary
 bound_player:
-  ; First, check if player_y is 0 (head is hitting top of screen)
-  ; JAF: NOT WORKING, player stops drrawing long before head is at top of screen?
   cmp word [player_y], 0
   jne .not_at_top
   call bounce_back
@@ -309,14 +307,14 @@ bounce_back:
 
 ; ypos_to_priority()
 ; Converts the Y position in AX to a priority.
-; floor( y/13 ) + 2
+; max( 4, floor( y/12 ) + 1 ) (The min of 4 is so player doesn't disappear near top of screen)
 ypos_to_priority:
   push bx
-  mov bx, 13
+  mov bx, 12
   div bx
   pop bx
   xor ah, ah
-  add ax, 2
+  add ax, 1
   cmp ax, 4
   jge .done
   mov ax, 4

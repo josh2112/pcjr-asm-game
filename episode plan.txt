@@ -7,7 +7,8 @@ Ep 15:
  - Going back to INT 16H keyboard handling (instead of replacing INT 9H handler)
  - Text I/O area at bottom of screen
 
-TODO:
- - Try episode-11 without "call waitForRetrace"
- - Test writing to different pages again 
- - Simple program to read file directly into framebuffer
+future on PCjr observations:
+ - Disk is corrupt? Disk drive needs replacement (problems reading known good disk this morning)
+   - Try formatting a new disk
+ - Even with corruption, input was still working OK, but cursor key movement wasn't. Error in the priority checker code?
+   - Comment out bound_player and try again.

@@ -16,53 +16,16 @@
             ]
         },
         {
-            "name": "Python: Attach",
-            "type": "python",
-            "request": "attach",
-            "port": 5678,
-            "host": "localhost"
-        },
-        {
-            "name": "Python: Module",
+            "name": "Test prepareImage.py with room1",
             "type": "python",
             "request": "launch",
-            "module": "enter-your-module-name-here",
-            "console": "integratedTerminal"
-        },
-        {
-            "name": "Python: Django",
-            "type": "python",
-            "request": "launch",
-            "program": "${workspaceFolder}/manage.py",
+            "program": "${workspaceFolder}/tools/prepareImage.py",
             "console": "integratedTerminal",
             "args": [
-                "runserver",
-                "--noreload",
-                "--nothreading"
-            ],
-            "django": true
+                "pic",
+                "${workspaceFolder}/room1/room1-orig.png",
+                "${workspaceFolder}/room1/room1-pic.png"
+            ]
         },
-        {
-            "name": "Python: Flask",
-            "type": "python",
-            "request": "launch",
-            "module": "flask",
-            "env": {
-                "FLASK_APP": "app.py"
-            },
-            "args": [
-                "run",
-                "--no-debugger",
-                "--no-reload"
-            ],
-            "jinja": true
-        },
-        {
-            "name": "Python: Current File (External Terminal)",
-            "type": "python",
-            "request": "launch",
-            "program": "${file}",
-            "console": "externalTerminal"
-        }
     ]
 }
