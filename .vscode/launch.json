@@ -14,18 +14,6 @@
             "args": [
                 "README.md"
             ]
-        },
-        {
-            "name": "Test prepareImage.py with room1",
-            "type": "python",
-            "request": "launch",
-            "program": "${workspaceFolder}/tools/prepareImage.py",
-            "console": "integratedTerminal",
-            "args": [
-                "pic",
-                "${workspaceFolder}/room1/room1-orig.png",
-                "${workspaceFolder}/room1/room1-pic.png"
-            ]
-        },
+        }
     ]
 }
