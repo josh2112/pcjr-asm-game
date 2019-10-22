@@ -17,6 +17,8 @@ originalVideoMode: db 0
 
 color_bg: db 1
 
+path_room1: db "room1.bin", 0
+
 is_running: db 1
 
 player_x: dw 160
@@ -46,9 +48,6 @@ player_icon: dw 14, 16
   db 0x00, 0x00, 0x33, 0x00, 0x33, 0x00, 0x00 ; 14
   db 0x00, 0x00, 0x33, 0x00, 0x33, 0x00, 0x00 ; 15
   db 0x00, 0x66, 0x66, 0x00, 0x66, 0x66, 0x00 ; 16
-
-rect1: dw 40, 40, 120, 60, 12
-rect2: dw 120, 70, 120, 60, 5
 
 section .bss
 
@@ -80,27 +79,15 @@ int 10h                      ; Call INT10h fn 0 to change the video mode
 
 call install_keyboard_handler
 
-push word [color_bg]
-push word [room_height_px]
-push word [room_width_px]
-xor ax, ax
+push word [BACKGROUND_SEG]
+mov ax, [room_width_px]
+mov bx, [room_height_px]
+mul bx
+shr ax, 1
 push ax
+mov ax, path_room1
 push ax
-call draw_rect             ; Clear the whole background buffer to background color
-
-push word [rect1+8]
-push word [rect1+6]
-push word [rect1+4]
-push word [rect1+2]
-push word [rect1]
-call draw_rect             ; Draw a red rectangle onto the background buffer
-
-push word [rect2+8]
-push word [rect2+6]
-push word [rect2+4]
-push word [rect2+2]
-push word [rect2]
-call draw_rect             ; Draw a brown rectangle onto the background buffer
+call read_file  ; read "room1.bin" into BACKGROUND_SEG
 
 push word [room_height_px]
 push word [room_width_px]
@@ -189,6 +176,7 @@ int 21h
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 %include 'std/stdio.mac'
+%include 'std/stdio.asm'
 %include 'std/stdlib.asm'
 %include 'std/320x200x16.asm'
 %include 'input.asm'

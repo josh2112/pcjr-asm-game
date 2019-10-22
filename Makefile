@@ -22,7 +22,7 @@ TARGET=test
 TARGET.COM=$(TARGET).com
 
 MACROS=std/stdio.mac
-SRCS=std/stdlib.asm std/320x200x16.asm input.asm
+SRCS=std/stdlib.asm std/320x200x16.asm std/stdio.asm input.asm
 DEPS=$(MACROS) $(SRCS)
 
 NASM_OPTS=-f bin -l $(TARGET).lst
