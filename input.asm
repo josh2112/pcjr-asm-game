@@ -14,22 +14,26 @@ process_key:
 .testUp:
   cmp byte [keyboardState+key_up], 1
   jne .testDown
-  dec word [player_y]
+  ;dec word [player_y]
+  mov byte [player_walk_dir], DIR_UP
   jmp .done
 .testDown:
   cmp byte [keyboardState+key_down], 1
   jne .testLeft
-  inc word [player_y]
+  ;inc word [player_y]
+  mov byte [player_walk_dir], DIR_DOWN
   jmp .done
 .testLeft:
   cmp byte [keyboardState+key_left], 1
   jne .testRight
-  dec word [player_x]
+  ;dec word [player_x]
+  mov byte [player_walk_dir], DIR_LEFT
   jmp .done
 .testRight:
   cmp byte [keyboardState+key_right], 1
   jne .done
-  inc word [player_x]
+  ;inc word [player_x]
+  mov byte [player_walk_dir], DIR_RIGHT
 .done:
   ret
 

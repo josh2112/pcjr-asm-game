@@ -14,6 +14,17 @@ section .data
 
 section .text
 
+; Duplicates the low nibble of AL in the high nibble. Clobbers AH.
+nibble_to_byte_low:
+  and al, 0x0f ; Mask out the high 4 bits of the byte
+  mov ah, al   ; Make a copy in AH
+  shl ah, 1    ; Move the low nibble to the high
+  shl ah, 1    ; (by shifting left 4 bytes)
+  shl ah, 1
+  shl ah, 1
+  or al, ah    ; Combine the nibbles
+  ret
+
 ; blt_background_to_compositor( x, y, w, h )
 ; Copies a rectangle of background buffer data to the compositor.
 ; NOTE: X and W must be even!
@@ -42,14 +53,18 @@ blt_background_to_compositor:
   mul bx           ; AX *= 320
   add ax, [bp+4]   ; ... + x
   shr ax, 1        ; ... / 2
-  mov si, ax
   mov di, ax
 
   push cx
   mov cx, [bp+8]
   shr cx, 1        ; Because each byte encodes 2 pixels
 
-  rep movsb        ; Copy the whole line from DS:SI to ES:DI
+.copyByte:
+  mov al, [ds:di]
+  call nibble_to_byte_low
+  mov byte [es:di], al
+  inc di
+  loop .copyByte
 
   pop cx
   loop .copyLine
@@ -58,60 +73,6 @@ blt_background_to_compositor:
   pop ds
   pop bp
   ret 8
-
-
-
-; draw_rect( x, y, w, h, color )
-; Draws a colored rectangle of pixels of the given size at the given location
-; to the background.
-; Args:
-;   bp+4 = x, bp+6 = y,
-;   bp+8 = w, bp+10 = h,
-;   bp+12 = color
-draw_rect:
-  push bp
-  mov bp, sp
-
-  mov ax, [bp+12]
-  mov cx, 4
-  shl al, cl
-  xor al, [bp+12]
-  mov si, ax  ; Color in SI
-
-  mov di, [BACKGROUND_SEG]
-  mov es, di       ; Compositor segment in ES
-
-  mov cx, [bp+10]  ; This CX will count down the rows
-  
-.copyLine:
-  ; Compute which row number we're writing to
-  mov ax, [bp+10] ; Start with rect height
-  sub ax, cx      ; Subtract countdown to give us rect row
-  add ax, [bp+6]  ; Add Y location to rect row number
-  
-  ; Compute starting byte offset for this location
-  ; DI = (AX * 320 + x) / 2
-  mov bx, [cs:room_width_px]
-  mul bx           ; AX *= 320
-  add ax, [bp+4]   ; ... + x
-  shr ax, 1        ; ... / 2
-  mov di, ax
-
-  push cx
-  mov cx, [bp+8]
-  shr cx, 1        ; Because each byte encodes 2 pixels
-
-.copyByte:
-  mov ax, si
-  mov [es:di], al
-  inc di
-  loop .copyByte
-
-  pop cx
-  loop .copyLine
-
-  pop bp
-  ret 10
 
 
 ; blt_compositor_to_framebuffer( x, y, w, h )

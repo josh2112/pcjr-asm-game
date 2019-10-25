@@ -9,6 +9,12 @@
 %define key_right 0x4d
 %define key_down 0x50
 
+%define DIR_NONE 0
+%define DIR_LEFT 1
+%define DIR_RIGHT 2
+%define DIR_UP 3
+%define DIR_DOWN 4
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 section .data
@@ -20,6 +26,8 @@ color_bg: db 1
 path_room1: db "room1.bin", 0
 
 is_running: db 1
+
+player_walk_dir: db DIR_NONE   ; See "DIR_" defines
 
 player_x: dw 160
 player_y: dw 100
@@ -115,6 +123,9 @@ game_loop:
 
   call process_key           ; Do something with the key
 
+  call move_player
+  call bound_player
+
   ; 1) Copy rectangle covering player's previous location from background to compositor
   push word [player_icon+2]
   push word [player_icon+0]
@@ -180,3 +191,88 @@ int 21h
 %include 'std/stdlib.asm'
 %include 'std/320x200x16.asm'
 %include 'input.asm'
+
+
+move_player:
+  mov bl, [player_walk_dir]
+  cmp bl, DIR_LEFT
+  jne .testRight
+  dec word [player_x]
+  dec word [player_x]
+  .testRight:
+    cmp bl, DIR_RIGHT
+    jne .testUp
+    inc word [player_x]
+    inc word [player_x]
+  .testUp:
+    cmp bl, DIR_UP
+    jne .testDown
+    dec word [player_y]
+  .testDown:
+    cmp bl, DIR_DOWN
+    jne .done
+    inc word [player_y]
+  .done:
+    ret
+
+; Check the player's feet (bottom scanline of icon). If they have have hit a 
+; hard boundary (mask=0), stop the walking motion and move back one unit.
+bound_player:
+  mov ax, [player_y]
+  add ax, [player_icon+2]
+  dec ax     ; AX = player foot-line
+  ; Compute starting location for player foot-line in framebuffer
+  ; SI = (AX * 320 + x) / 2
+  mov bx, [room_width_px]
+  mul bx           ; AX *= 320
+  add ax, [player_x]   ; ... + x
+  shr ax, 1        ; ... / 2
+  mov si, ax
+  mov cx, [player_icon+0]
+  shr cx, 1
+  push ds            ; DS to source (FB)
+  mov ds, [BACKGROUND_SEG]
+  xor ah, ah
+  .checkPixel:
+    mov al, [ds:si]
+    ; The mask is the upper 4 bits, and we're trying to see if it has
+    ; a value of 0 (vs 0xf). Therefore we can just check whether the whole
+    ; byte is less than 0x10.
+    cmp byte al, 0x10
+    jl .foundBorder
+    inc si
+    loop .checkPixel
+
+  pop ds
+  ret
+  .foundBorder:
+    pop ds
+    call bounce_back
+    ret
+
+bounce_back:
+  mov byte bl, [player_walk_dir]
+  cmp bl, DIR_LEFT
+  jne .next
+  mov bl, DIR_NONE
+  inc word [player_x]
+  inc word [player_x]
+  .next:
+    cmp bl, DIR_RIGHT
+    jne .next2
+    mov bl, DIR_NONE
+    dec word [player_x]
+    dec word [player_x]
+  .next2:
+    cmp bl, DIR_UP
+    jne .next3
+    mov bl, DIR_NONE
+    inc word [player_y]
+  .next3:
+    cmp bl, DIR_DOWN
+    jne .done
+    mov bl, DIR_NONE
+    dec word [player_y]
+  .done:
+    mov byte [player_walk_dir], bl
+    ret
