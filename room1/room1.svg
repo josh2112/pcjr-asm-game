@@ -18,7 +18,7 @@
    inkscape:export-filename="D:\jf334\Desktop\boundary-lines.png"
    inkscape:export-xdpi="149.77"
    inkscape:export-ydpi="149.77"
-   inkscape:version="0.92.3 (2405546, 2018-03-11)"
+   inkscape:version="0.92.2 5c3e80d, 2017-08-06"
    sodipodi:docname="room1.svg"
    style="shape-rendering:crispEdges">
   <defs
@@ -47,9 +47,9 @@
      borderopacity="1.0"
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
-     inkscape:zoom="0.5"
-     inkscape:cx="87.641168"
-     inkscape:cy="270.48692"
+     inkscape:zoom="2"
+     inkscape:cx="142.57545"
+     inkscape:cy="110.12125"
      inkscape:document-units="px"
      inkscape:current-layer="layer4"
      showgrid="true"
@@ -60,10 +60,10 @@
      units="px"
      showguides="true"
      inkscape:guide-bbox="true"
-     inkscape:window-width="1920"
-     inkscape:window-height="1017"
-     inkscape:window-x="-8"
-     inkscape:window-y="-8"
+     inkscape:window-width="1440"
+     inkscape:window-height="855"
+     inkscape:window-x="0"
+     inkscape:window-y="1"
      inkscape:window-maximized="1">
     <inkscape:grid
        type="xygrid"
@@ -81,7 +81,7 @@
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title></dc:title>
+        <dc:title />
       </cc:Work>
     </rdf:RDF>
   </metadata>
@@ -224,7 +224,7 @@
      inkscape:groupmode="layer"
      id="layer1"
      transform="translate(354.54166,97.271283)"
-     style="display:none;opacity:1"
+     style="display:inline;opacity:1"
      sodipodi:insensitive="true">
     <rect
        style="display:inline;opacity:1;fill:#55ff55;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:0.03611669;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
@@ -618,7 +618,7 @@
        width="319.97787"
        height="199.99992"
        x="0"
-       y="7.6293945e-005">
+       y="7.6293945e-05">
       <desc
          id="desc989-3">90,140 215,48 273,141 86,11 64,11 46,11 24,11 7,11 38,60 48,60 64,60</desc>
     </rect>
@@ -711,14 +711,14 @@
      inkscape:groupmode="layer"
      id="layer4"
      inkscape:label="depth 1"
-     style="display:inline">
+     style="display:none">
     <rect
        style="opacity:1;fill:#ffffff;fill-opacity:0.99497483;fill-rule:nonzero;stroke:none;stroke-width:0.25007913;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
        id="rect2085"
        width="320"
        height="200"
        x="0"
-       y="1.1920929e-007" />
+       y="1.1920929e-07" />
     <path
        style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
        d="m 246.58839,112.05062 12.56292,7.69938 45.83248,-3.09237 -16.04228,-7.34407 z"
@@ -741,7 +741,7 @@
        inkscape:connector-curvature="0" />
     <path
        style="fill:none;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
-       d="M -0.35355339,180 0.03201689,92.159863 155.48336,104.96567 l 10.71579,-1.26185 13.90039,0.65039 14.7207,-0.80274 7.46101,-3.613961 -0.1969,1.612601 4.95348,0.71593 0.093,-2.17814 23.05657,1.37568 77.78718,-6.508493 12.00195,3.800781 0,101.236322 L 65,200"
+       d="M -0.35355339,180 0.03201689,92.159863 155.48336,104.96567 l 10.71579,-1.26185 13.90039,0.65039 14.7207,-0.80274 7.46101,-3.613961 -0.1969,1.612601 4.95348,0.71593 0.093,-2.17814 23.05657,1.37568 77.78718,-6.508493 12.00195,3.800781 V 199.99219 L 65,200"
        id="path2083"
        inkscape:connector-curvature="0" />
   </g>

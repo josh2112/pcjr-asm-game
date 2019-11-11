@@ -237,8 +237,8 @@ bound_player:
     mov al, [ds:si]
     ; The mask is the upper 4 bits, and we're trying to see if it has
     ; a value of 0 (vs 0xf). Therefore we can just check whether the whole
-    ; byte is less than 0x10.
-    cmp byte al, 0x10
+    ; byte is less than 0xf0.
+    cmp al, 0xf0
     jl .foundBorder
     inc si
     loop .checkPixel
