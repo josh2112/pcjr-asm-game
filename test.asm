@@ -237,9 +237,10 @@ bound_player:
     mov al, [ds:si]
     ; The mask is the upper 4 bits, and we're trying to see if it has
     ; a value of 0 (vs 0xf). Therefore we can just check whether the whole
-    ; byte is less than 0xf0.
-    cmp al, 0xf0
-    jl .foundBorder
+    ; byte is less than 0x10. NOTE: We must use JB (jump below) here
+    ; instead of JL (jump if less than) because our numbers are not signed
+    cmp al, 0x10
+    jb .foundBorder
     inc si
     loop .checkPixel
 
@@ -274,5 +275,4 @@ bounce_back:
     mov bl, DIR_NONE
     dec word [player_y]
   .done:
-    mov byte [player_walk_dir], bl
     ret
