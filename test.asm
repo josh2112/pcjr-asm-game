@@ -70,7 +70,7 @@ section .text
 mov bx, ss
 mov cl, 4
 shl bx, cl
-mov ax, 0x8600
+mov ax, 0xae00
 sub ax, bx
 mov sp, ax
 xor ax, ax
