@@ -19,7 +19,7 @@ section .data
 
   text_prompt: db "> $"
   text_comma: db ", $"
-  text_acknowledgement: db "Got it!"
+  text_acknowledgement: db "Got it!$"
 
   text_input: times 64 db '$'
   text_input_offset: dw 0
