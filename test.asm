@@ -34,6 +34,8 @@ player_y: dw 100
 player_x_prev: dw 160
 player_y_prev: dw 100
 
+text_debug: db "Can't do 'er boys$"
+
 keyboardState: times 128 db 0
 
 player_icon: dw 14, 16

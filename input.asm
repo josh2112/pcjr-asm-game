@@ -35,6 +35,7 @@ process_key:
 
 
 handle_int9h:
+  print text_debug
   cli
   push ax
   push bx
