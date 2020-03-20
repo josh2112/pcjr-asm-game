@@ -3,11 +3,13 @@
 [cpu 8086]
 [org 100h]
 
-%define key_esc 0x01
-%define key_up 0x48
-%define key_left 0x4b
-%define key_right 0x4d
-%define key_down 0x50
+%include 'std/stdio.mac'
+
+%define KEYCODE_ESC 0x01
+%define KEYCODE_UP 0x48
+%define KEYCODE_LEFT 0x4b
+%define KEYCODE_RIGHT 0x4d
+%define KEYCODE_DOWN 0x50
 
 %define DIR_NONE 0
 %define DIR_LEFT 1
@@ -27,14 +29,14 @@ path_room1: db "room1.bin", 0
 
 is_running: db 1
 
-player_walk_dir: db DIR_NONE   ; See "DIR_" defines
+text_prompt: db "What do?$"
+
+player_walk_dir: db DIR_NONE
 
 player_x: dw 160
 player_y: dw 100
 player_x_prev: dw 160
 player_y_prev: dw 100
-
-keyboardState: times 128 db 0
 
 player_icon: dw 14, 16
   db 0x00, 0x00, 0xee, 0xee, 0xee, 0x00, 0x00 ; 1
@@ -85,8 +87,6 @@ mov [originalVideoMode], al  ; Store it into the byte pointed to by originalVide
 mov ax, 0x0009               ; AH <- 0x00 (set video mode), AL <- 9 (new mode)
 int 10h                      ; Call INT10h fn 0 to change the video mode
 
-call install_keyboard_handler
-
 push word [BACKGROUND_SEG]
 mov ax, [room_width_px]
 mov bx, [room_height_px]
@@ -110,6 +110,13 @@ xor ax, ax
 push ax
 push ax
 call blt_compositor_to_framebuffer
+
+; Move cursor to text window and print a prompt
+xor bx, bx        ; Set page number for cursor move (0 for graphics modes)
+mov dx, 0x1500    ; line 21 (0x15), col 0 (0x0)
+mov ax, 0x0200    ; Call "set cursor"
+int 10h
+print text_prompt
 
 game_loop:
 
@@ -168,11 +175,9 @@ game_loop:
   call blt_compositor_to_framebuffer
 
   cmp byte [is_running], 0   ; If still running (ESC key not pressed),
-  jne game_loop                ; jump out of game loop
+  jne game_loop              ; jump out of game loop
 
 clean_up:
-
-call restore_keyboard_handler
 
 ; Change the video mode back to whatever it was before (the value stored in
 ; originalVideoMode)
@@ -186,7 +191,6 @@ int 21h
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-%include 'std/stdio.mac'
 %include 'std/stdio.asm'
 %include 'std/stdlib.asm'
 %include 'std/320x200x16.asm'
