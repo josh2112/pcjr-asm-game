@@ -1,5 +1,3 @@
 So far we've been using the whole screen to display our image. I would like to reserve some space for text at the bottom of the screen. This could be used for descriptions, text input from the player, debugging messages, etc. We'd also be saving some space in memory (remember the vast majority of our app's memory usage is the 2 screen-sized areas we have to reserve). The 320x200 graphics mode corresponds with the 40x25 text mode, meaning lines of text are 200/25 = 8 pixels high each. So if we wanted room for 4 lines of text on the bottom, we could reduce our image size to 320x168.
 
 I've done that in my source images by just cutting off the bottom 32 rows while moving up the sandbox (under the play structure) and the fire pit to compensate. Remember to do this to both your picture and depth images, then rerun the <code>process-room</code> script to rebuild <code>room1.bin</code>.
-
-Now we have to tackle another difficult thing -- keyboard input.
