@@ -1,0 +1,11 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"path": "../pcjr-asm-game-tools"
+		}
+	],
+	"settings": {}
+}
