@@ -57,7 +57,7 @@ process_keys_2:
     cmp ah, KEYCODE_ENTER
     jne .testBackspace
     call advance_to_next_line
-    print text_acknowledgement
+    print text_version
     call advance_to_next_line
     print text_prompt
     ret

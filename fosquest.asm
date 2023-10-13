@@ -1,4 +1,5 @@
-; test.asm: Playing around with IBM PCjr text, graphics and sound routines
+; Foster's Quest
+; Playing around with IBM PCjr text, graphics and sound routines
 
 [cpu 8086]
 [org 100h]
@@ -19,7 +20,8 @@ section .data
 
   text_prompt: db "> $"
   text_comma: db ", $"
-  text_acknowledgement: db "Got it!$"
+  text_acknowledgement: db "Ok$"
+  text_version: db "Foster's Quest v0.1"
 
   text_input: times 64 db '$'
   text_input_offset: dw 0
