@@ -14,17 +14,6 @@ section .data
 
 section .text
 
-; Duplicates the low nibble of AL in the high nibble. Clobbers AH.
-nibble_to_byte_low:
-  and al, 0x0f ; Mask out the high 4 bits of the byte
-  mov ah, al   ; Make a copy in AH
-  shl ah, 1    ; Move the low nibble to the high
-  shl ah, 1    ; (by shifting left 4 bytes)
-  shl ah, 1
-  shl ah, 1
-  or al, ah    ; Combine the nibbles
-  ret
-
 ; blt_background_to_compositor( x, y, w, h )
 ; Copies a rectangle of background buffer data to the compositor.
 ; NOTE: X and W must be even!
@@ -61,7 +50,15 @@ blt_background_to_compositor:
 
 .copyByte:
   mov al, [ds:di]
-  call nibble_to_byte_low
+  ; nibble_to_byte_low: Duplicates the low nibble of AL in the high nibble. Clobbers AH
+  and al, 0x0f ; Mask out the high 4 bits of the byte
+  mov ah, al   ; Make a copy in AH
+  shl ah, 1    ; Move the low nibble to the high
+  shl ah, 1    ; (by shifting left 4 bytes)
+  shl ah, 1
+  shl ah, 1
+  or al, ah
+  ; End nibble_to_byte_low
   mov byte [es:di], al
   inc di
   loop .copyByte

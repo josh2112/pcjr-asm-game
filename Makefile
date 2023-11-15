@@ -18,7 +18,7 @@ else
 	endif
 endif
 
-TARGET=test
+TARGET=fosquest
 TARGET.COM=$(TARGET).com
 
 MACROS=std/stdio.mac
@@ -35,7 +35,7 @@ run: $(TARGET.COM)
 	$(DOSBOX) $(DOSBOX_OPTS) $^
 
 debug: $(TARGET.COM)
-	$(DOSBOX) $(DOSBOX_OPTS) -c "mount c: ." -c "mount d: ../pcjr-asm-game-tools" -c "c:" -c "d:\debug\debug.com c:\test.com"
+	$(DOSBOX) $(DOSBOX_OPTS) -c "mount c: ." -c "mount d: ../pcjr-asm-game-tools" -c "c:" -c "d:\debug\debug.com c:\$(TARGET.COM)"
 
 clean:
 	$(RM) $(TARGET.COM)
