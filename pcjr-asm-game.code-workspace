@@ -1,0 +1,13 @@
+{
+    "folders": [
+        {
+            "path": "../pcjr-asm-game-tools"
+        },
+        {
+            "path": "."
+        },
+        {
+            "path": "../pcjr-asm-game-future"
+        }
+    ]
+}

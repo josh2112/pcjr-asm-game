@@ -1,22 +1,9 @@
 #
 # Makefile for PCjr ASM Game project
 #
-ifeq ($(OS),Windows_NT)
-	NASM="$(USERPROFILE)\AppData\Local\bin\NASM\nasm"
-    DOSBOX="..\pcjr-asm-game-tools\tools\EmuCR-Dosbox-r4059\dosbox"
-	#DOSBOX="D:\Program Files (x86)\DOSBox-0.74-3\dosbox"
-	#DOSBOX="D:\jf334\Documents\Projects\asm-8088\dosbox-svn\dosbox\visualc_net\Release\dosbox"
-	RM=cmd \/C del
-else
-	NASM=nasm
-	RM=rm
-	UNAME_S := $(shell uname -s)
-	ifeq ($(UNAME_S),Darwin)
-		DOSBOX=/Applications/DOSBox-0.74-3.app/Contents/MacOS/DOSBox
-	else # assume Linux
-		DOSBOX=DISPLAY=:0 dosbox
-	endif
-endif
+NASM="$(USERPROFILE)\AppData\Local\bin\NASM\nasm.exe"
+DOSBOX="..\pcjr-asm-game-tools\dosbox\dosbox.exe"
+RM=cmd \/C del
 
 TARGET=fosquest
 TARGET.COM=$(TARGET).com
@@ -35,7 +22,7 @@ run: $(TARGET.COM)
 	$(DOSBOX) $(DOSBOX_OPTS) $^
 
 debug: $(TARGET.COM)
-	$(DOSBOX) $(DOSBOX_OPTS) -c "mount c: ." -c "mount d: ../pcjr-asm-game-tools" -c "c:" -c "d:\debug\debug.com c:\$(TARGET.COM)"
+	$(DOSBOX) $(DOSBOX_OPTS) -c "mount c: ." -c "mount d: ../pcjr-asm-game-tools" -c "c:" -c "d:\tools\debug.com c:\$(TARGET.COM)"
 
 clean:
 	$(RM) $(TARGET.COM)
