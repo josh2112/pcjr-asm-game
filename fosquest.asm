@@ -32,9 +32,9 @@ section .data
 
   player_walk_dir: db DIR_NONE   ; See "DIR_" defines
 
-  player_x: dw 200
+  player_x: dw 160
   player_y: dw 100
-  player_x_prev: dw 200
+  player_x_prev: dw 160
   player_y_prev: dw 100
 
 player_icon: dw 14, 16
@@ -69,21 +69,22 @@ section .text
 mov bx, ss
 mov cl, 4
 shl bx, cl
-mov ax, 0x8000
+mov ax, 0xae00
 sub ax, bx
 mov sp, ax
 xor ax, ax
 push ax
 
 ; Get the initial video mode and save it to [originalVideoMode]
-mov ax, 0x0f00               ; AH = 0x0f (get video mode)
+mov ax, 0x0f00               ; AH <- 0x0f (get video mode)
 int 10h                      ; Call INT10h fn 0x0f which will store the current video mode in AL
 mov [originalVideoMode], al  ; Store it into the byte pointed to by originalVideoMode.
 
 ; Change the video mode to Mode 9 (320x200, 16 colors)
-mov ax, 0x0009               ; AH = 0x00 (set video mode), AL = 0x09 (new mode)
+mov ax, 0x0009               ; AH <- 0x00 (set video mode), AL <- 9 (new mode)
 int 10h                      ; Call INT10h fn 0 to change the video mode
 
+; TODO: What is this for?
 mov ax, 0x0582               ; AH = 0x05 (CPU/CRT page registers), AL = 0x82 (set CRT page register)
 mov bx, 0x0600               ; BH = Page 6, matching our FRAMEBUFFER_SEG
 int 10h                      ; Call INT10h fn 0x05 to set CRT page register to 6
@@ -103,7 +104,7 @@ push word [room_width_px]
 xor ax, ax
 push ax
 push ax
-call blt_background_to_compositor
+call blt_background_to_compositor ; Copy whole background to compositor
 
 push word [room_height_px]
 push word [room_width_px]
