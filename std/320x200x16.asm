@@ -3,6 +3,7 @@
 %ifndef _320X200X16_ASM
 %define _320X200X16_ASM
 
+
 section .data
 
   BACKGROUND_SEG: dw 0xae0    ; 0x1170 - 26880 bytes = 0xae0

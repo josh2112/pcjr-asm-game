@@ -1,4 +1,5 @@
-; test.asm: Playing around with IBM PCjr text, graphics and sound routines
+; Foster's Quest
+; Playing around with IBM PCjr text, graphics and sound routines
 
 [cpu 8086]
 [org 100h]
