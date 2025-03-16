@@ -6,10 +6,10 @@
 
 section .data
 
-  BACKGROUND_SEG: dw 0xae0    ; 0x1170 - 26880 bytes = 0xae0
-  COMPOSITOR_SEG: dw 0x1170   ; 0x18000 - 26880 bytes = 0x1170
-  FRAMEBUFFER_SEG: dw 0x1800  ; FB always starts at 0x18000
-
+  FRAMEBUFFER_SEG: dw 1800h  ; FB always starts at 18000h
+  COMPOSITOR_SEG: dw 1170h   ; 18000h - 26880 bytes = 11700h
+  BACKGROUND_SEG: dw 0ae0h   ; 11700h - 26880 bytes = 0ae00h
+  
   room_width_px: dw 320
   room_height_px: dw 168
 

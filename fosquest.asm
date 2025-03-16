@@ -69,24 +69,24 @@ section .text
 mov bx, ss
 mov cl, 4
 shl bx, cl
-mov ax, 0xae00
+mov ax, 0hae00
 sub ax, bx
 mov sp, ax
 xor ax, ax
 push ax
 
 ; Get the initial video mode and save it to [originalVideoMode]
-mov ax, 0x0f00               ; AH <- 0x0f (get video mode)
+mov ax, 0f00h                ; AH <- 0x0f (get video mode)
 int 10h                      ; Call INT10h fn 0x0f which will store the current video mode in AL
 mov [originalVideoMode], al  ; Store it into the byte pointed to by originalVideoMode.
 
 ; Change the video mode to Mode 9 (320x200, 16 colors)
-mov ax, 0x0009               ; AH <- 0x00 (set video mode), AL <- 9 (new mode)
+mov ax, 9h                   ; AH <- 0x00 (set video mode), AL <- 9 (new mode)
 int 10h                      ; Call INT10h fn 0 to change the video mode
 
 ; TODO: What is this for?
-mov ax, 0x0582               ; AH = 0x05 (CPU/CRT page registers), AL = 0x82 (set CRT page register)
-mov bx, 0x0600               ; BH = Page 6, matching our FRAMEBUFFER_SEG
+mov ax, 0582h                ; AH = 0x05 (CPU/CRT page registers), AL = 0x82 (set CRT page register)
+mov bx, 0600h                ; BH = Page 6, matching our FRAMEBUFFER_SEG
 int 10h                      ; Call INT10h fn 0x05 to set CRT page register to 6
 
 push word [BACKGROUND_SEG]
@@ -115,8 +115,8 @@ call blt_compositor_to_framebuffer
 
 ; Move cursor to text window and print a prompt
 xor bx, bx        ; Set page number for cursor move (0 for graphics modes)
-mov dx, 0x1500    ; line 21 (0x15), col 0 (0x0)
-mov ax, 0x0200    ; Call "set cursor"
+mov dx, 1500h    ; line 21 (0x15), col 0 (0x0)
+mov ax, 0200h    ; Call "set cursor"
 int 10h
 print text_prompt
 
@@ -195,7 +195,7 @@ xor ah, ah
 int 10h
 
 ; Exit the program
-mov ax, 0x4c00
+mov ax, 4c00h
 int 21h
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -261,7 +261,7 @@ bound_player:
     ; The priority is in the top nibble (upper 4 bits). We're looking for 0, 1, or 15.
     ; If we add 1 to the top nibble and shift it to the lower 4 bits,
     ; we're now looking for 1, 2, or 0 (i.e. < 3)
-    add al, 0x10
+    add al, 10h
     shr al, 1
     shr al, 1
     shr al, 1
