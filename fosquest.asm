@@ -32,7 +32,7 @@ is_running: db 1
 
 text_prompt: db "What do?$"
 
-player_walk_dir: db DIR_NONE
+player_walk_dir: db DIR_NONE   ; See "DIR_" defines
 
 player_x: dw 160
 player_y: dw 100
