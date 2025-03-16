@@ -188,8 +188,6 @@ game_loop:
 
 clean_up:
 
-;call restore_keyboard_handler
-
 ; Change the video mode back to whatever it was before (the value stored in
 ; originalVideoMode)
 mov al, [originalVideoMode]
