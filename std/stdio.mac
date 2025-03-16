@@ -1,7 +1,4 @@
 ; stdio.mac: Input/output routines for 8088 assembly
-;
-; Expects the following initialized data:
-; str_crlf: db 0dh, 0ah, '$'
 
 %ifndef STDIO_MAC
 %define STDIO_MAC
