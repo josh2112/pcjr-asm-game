@@ -13,7 +13,7 @@ TARGET=fosquest
 TARGET.COM=$(TARGET).com
 
 MACROS=std/stdio.mac
-SRCS=$(TARGET).asm std/stdlib.asm std/320x200x16.asm std/stdio.asm input.asm renderer.asm
+SRCS=std/stdlib.asm std/320x200x16.asm std/stdio.asm input.asm renderer.asm
 DEPS=$(MACROS) $(SRCS)
 
 IMG_PLAYER=assets\icon\player.bin
@@ -21,11 +21,11 @@ IMG_ROOM1=room1.bin
 
 ASSETS=$(IMG_PLAYER) $(IMG_ROOM1)
 
-$(TARGET.COM): $(DEPS) $(ASSETS)
+$(TARGET.COM): $(TARGET).asm $(DEPS) $(ASSETS)
 	$(NASM) -f bin -l $(TARGET).lst -o $@ $<
 
 run: $(TARGET.COM)
-	$(DOSBOX) -conf $(DOSBOX_CONF) $^
+	$(DOSBOX) -conf $(DOSBOX_CONF) $<
 
 debug: $(TARGET.COM)
 	$(DOSBOX) -conf $(DOSBOX_CONF) -c "mount c: ." -c "mount d: ../pcjr-asm-game-tools" -c "d:\tools\debug.com c:\$^"
