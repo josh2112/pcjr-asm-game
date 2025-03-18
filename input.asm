@@ -64,12 +64,12 @@ process_keys_2:
   .testBackspace:
     cmp al, KEYCHAR_BACKSPACE
     jne .processChar
-    cmp dl, 3
+    cmp dl, 3     ; First 2 characters are the prompt, so only jump if we're at >= 3
     jl .done
     call process_key_backspace
     ret
   .processChar:
-    cmp dl, 39
+    cmp dl, 39   ; If we're at the end of the line, don't accept any more characters.
     jge .done
     mov ah, 0x0e
     mov bl, 7     ; Text color

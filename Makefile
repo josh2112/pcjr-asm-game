@@ -3,6 +3,8 @@
 #
 NASM=$(USERPROFILE)\AppData\Local\bin\NASM\nasm.exe
 DOSBOX=..\pcjr-asm-game-tools\dosbox\dosbox.exe
+DOSBOX_DBG=..\pcjr-asm-game-tools\dosbox\dosbox_with_debugger.exe
+
 RM=cmd \/C del
 
 DOSBOX_CONF=..\pcjr-asm-game-tools\pcjr.dosbox.conf
@@ -28,7 +30,7 @@ run: $(TARGET.COM)
 	$(DOSBOX) -conf $(DOSBOX_CONF) $<
 
 debug: $(TARGET.COM)
-	$(DOSBOX) -conf $(DOSBOX_CONF) -c "mount c: ." -c "mount d: ../pcjr-asm-game-tools" -c "d:\tools\debug.com c:\$^"
+	$(DOSBOX_DBG) -conf $(DOSBOX_CONF) -c "mount c: ." -c "c:" -c "debug $^"
 
 
 $(IMG_PLAYER): assets\icon\player.png

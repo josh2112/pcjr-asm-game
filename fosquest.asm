@@ -21,7 +21,7 @@ section .data
   text_prompt: db "> $"
   text_comma: db ", $"
   text_acknowledgement: db "Ok$"
-  text_version: db "Foster's Quest v0.1"
+  text_version: db "Foster's Quest v0.1$"
 
   text_input: times 64 db '$'
   text_input_offset: dw 0
@@ -46,23 +46,21 @@ section .bss
 
 section .text
 
-int 3 ; BREAKPOINT
+; Stack management - The stack pointer will likely be in the middle of our framebuffers. If so, move it to just before
+; the start of the first buffer. If not (DOSBOX will probably load us above the video memory), skip.
 
-call inspect
-mov ax, 4c00h
-int 21h
-
-
-; Stack management - Move stack pointer down out of the way
-; so we have three 32KB buffer regions free
+mov ax, BACKGROUND_SEG
 mov bx, ss
-mov cl, 4
-shl bx, cl
-mov ax, 0hae00
+cmp ax, bx
+jl stack_fixed   ; Don't change SP if loaded high
 sub ax, bx
-mov sp, ax
+mov cl, 4
+shl ax, cl
+mov sp, ax       ; SP = (BACKGROUND_SEG - SS) << 4
 xor ax, ax
-push ax
+push ax          ; Push our zero word that DOS expects
+
+stack_fixed:
 
 ; Get the initial video mode and save it to [originalVideoMode]
 mov ax, 0f00h                ; AH <- 0x0f (get video mode)
@@ -193,7 +191,7 @@ int 21h
 %include 'std/320x200x16.asm'
 %include 'input.asm'
 %include 'renderer.asm'
-%include 'std/inspect.asm'
+;%include 'std/inspect.asm'
 
 move_player:
   mov bl, [player_walk_dir]
