@@ -14,9 +14,7 @@ IMGTOOLS=set PYTHONPATH=..\pcjr-asm-game-tools && uv run -m imgtools
 TARGET=fosquest
 TARGET.COM=$(TARGET).com
 
-MACROS=std/stdio.mac
-SRCS=std/stdlib.asm std/320x200x16.asm std/stdio.asm input.asm renderer.asm
-DEPS=$(MACROS) $(SRCS)
+DEPS=std/stdio.mac.asm std/stdlib.asm std/320x200x16.asm std/stdio.asm input.asm renderer.asm inspect.asm
 
 IMG_PLAYER=assets\icon\player.bin
 IMG_ROOM1=room1.bin

@@ -4,7 +4,7 @@
 [cpu 8086]
 [org 100h]
 
-%include 'std/stdio.mac'
+%include 'std/stdio.mac.asm'
 
 %define DIR_NONE 0
 %define DIR_LEFT 1
@@ -187,12 +187,6 @@ int 21h
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-%include 'std/stdlib.asm'
-%include 'std/320x200x16.asm'
-%include 'input.asm'
-%include 'renderer.asm'
-;%include 'std/inspect.asm'
-
 move_player:
   mov bl, [player_walk_dir]
   cmp bl, DIR_LEFT
@@ -309,3 +303,11 @@ ypos_to_priority:
   mov ax, 4
 .done:
   ret
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+%include 'std/stdlib.asm'
+%include 'std/320x200x16.asm'
+%include 'input.asm'
+%include 'renderer.asm'
+;%include 'std/inspect.asm'

@@ -16,7 +16,7 @@ section .text
 ; Prints the given '$'-terminated string.
 %macro print 1
 	mov dx, %1
-	mov ax, 0x0900
+	mov ax, 0900h
 	int 21h
 %endmacro
 
