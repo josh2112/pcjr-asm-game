@@ -46,6 +46,13 @@ section .bss
 
 section .text
 
+int 3 ; BREAKPOINT
+
+call inspect
+mov ax, 4c00h
+int 21h
+
+
 ; Stack management - Move stack pointer down out of the way
 ; so we have three 32KB buffer regions free
 mov bx, ss
@@ -186,6 +193,7 @@ int 21h
 %include 'std/320x200x16.asm'
 %include 'input.asm'
 %include 'renderer.asm'
+%include 'std/inspect.asm'
 
 move_player:
   mov bl, [player_walk_dir]
