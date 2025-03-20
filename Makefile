@@ -9,7 +9,7 @@ RM=cmd \/C del
 
 DOSBOX_CONF=..\pcjr-asm-game-tools\pcjr.dosbox.conf
 
-IMGTOOLS=set PYTHONPATH=..\pcjr-asm-game-tools && uv run -m imgtools
+IMGTOOLS=uv --directory ..\pcjr-asm-game-tools run -m imgtools
 
 TARGET=fosquest
 TARGET.COM=$(TARGET).com
@@ -32,10 +32,10 @@ debug: $(TARGET.COM)
 
 
 $(IMG_PLAYER): assets\icon\player.png
-	cmd \/C "$(IMGTOOLS) packicon -fo $@ $<"
+	$(IMGTOOLS) packicon -fo $(CURDIR)\$@ $(CURDIR)\$<
 
 $(IMG_ROOM1): assets\room1\room1-color.png assets\room1\room1-depth.png
-	cmd \/C "$(IMGTOOLS) pack -fo $@ -c $(word 1,$^) -d $(word 2,$^)"
+	$(IMGTOOLS) pack -fo $(CURDIR)\$@ -c $(CURDIR)\$(word 1,$^) -d $(CURDIR)\$(word 2,$^)"
 
 clean:
 	$(RM) $(TARGET.COM) $(ASSETS)
