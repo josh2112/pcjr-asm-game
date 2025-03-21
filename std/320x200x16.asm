@@ -16,7 +16,7 @@ section .data
 section .text
 
 ; Duplicates the low nibble of AL in the high nibble. Clobbers AH.
-nibble_to_byte_low:
+%macro nibble_to_byte_low 0
   and al, 0x0f ; Mask out the high 4 bits of the byte
   mov ah, al   ; Make a copy in AH
   shl ah, 1    ; Move the low nibble to the high
@@ -24,7 +24,7 @@ nibble_to_byte_low:
   shl ah, 1
   shl ah, 1
   or al, ah    ; Combine the nibbles
-  ret
+%endmacro
 
 
 ; blt_background_to_compositor( x, y, w, h )
@@ -63,7 +63,7 @@ blt_background_to_compositor:
 
 .copyByte:
   mov al, [ds:di]
-  call nibble_to_byte_low
+  nibble_to_byte_low
   mov byte [es:di], al
   inc di
   loop .copyByte
