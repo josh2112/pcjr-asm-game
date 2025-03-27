@@ -7,6 +7,8 @@
 %ifndef STDIO_ASM
 %define STDIO_ASM
 
+section .text
+
 ; read_file( path, size, destination )
 ; Reads bytes from a file into a buffer.
 ; Args:
