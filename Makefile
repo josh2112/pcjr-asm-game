@@ -14,7 +14,7 @@ IMGTOOLS=uv --directory ..\pcjr-asm-game-tools run -m imgtools
 TARGET=fosquest
 TARGET.COM=$(TARGET).com
 
-DEPS=std/stdio.mac.asm std/stdlib.asm std/320x200x16.asm std/stdio.asm input.asm renderer.asm inspect.asm
+DEPS=std/stdio.mac.asm std/stdlib.asm std/320x200x16.asm std/stdio.asm input.asm
 
 IMG_PLAYER=assets\icon\player.bin
 IMG_ROOM1=room1.bin

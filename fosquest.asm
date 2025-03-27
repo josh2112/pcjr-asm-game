@@ -309,5 +309,3 @@ ypos_to_priority:
 %include 'std/stdlib.asm'
 %include 'std/320x200x16.asm'
 %include 'input.asm'
-%include 'renderer.asm'
-;%include 'std/inspect.asm'

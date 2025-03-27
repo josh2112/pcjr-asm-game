@@ -26,12 +26,20 @@ section .text
 	print str_crlf
 %endmacro
 
+; Stores the string representation of the value in %2 in buffer %1.
+; Example usage:
+; str_sp: db 'sp=$'
+; print str_sp
+; pop sp
+; wordToString buf16, sp
+; println buf16
 %macro wordToString 2
   mov di, %1
   mov ax, %2
   call int_to_string
 %endmacro
 
+; Stores the string representation of the value in the lower half of %2 in buffer %1.
 %macro byteToString 2
   mov di, %1
   mov ax, %2
