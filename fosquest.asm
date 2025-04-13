@@ -49,10 +49,17 @@ section .text
 ; Stack management - The stack pointer will likely be in the middle of our framebuffers. If so, move it to just before
 ; the start of the first buffer. If not (DOSBOX will probably load us above the video memory), skip.
 
-mov ax, BACKGROUND_SEG
+mov ax, ss
+cmp ax, [FRAMEBUFFER_SEG]
+jg stack_fixed   ; If past the end of the framebuffer (SS > FRAMEBUFFER_SEG), all good
+; Else, if past the beginning of our buffers (SS:SP > BACKGROUND_SEG), move SP down appropriately
+mov cl, 4
+shl ax, cl
+add ax, sp  ; Absolute SP
+cmp ax, [BACKGROUND_SEG]
+jl stack_fixed
+mov ax, [BACKGROUND_SEG]
 mov bx, ss
-cmp ax, bx
-jl stack_fixed   ; Don't change SP if loaded high
 sub ax, bx
 mov cl, 4
 shl ax, cl
