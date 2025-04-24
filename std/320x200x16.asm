@@ -51,15 +51,7 @@ blt_background_to_compositor:
 
 .copyByte:
   mov al, [ds:di]
-  ; nibble_to_byte_low: Duplicates the low nibble of AL in the high nibble. Clobbers AH
-  and al, 0x0f ; Mask out the high 4 bits of the byte
-  mov ah, al   ; Make a copy in AH
-  shl ah, 1    ; Move the low nibble to the high
-  shl ah, 1    ; (by shifting left 4 bytes)
-  shl ah, 1
-  shl ah, 1
-  or al, ah
-  ; End nibble_to_byte_low
+  nibble_to_byte_low
   mov byte [es:di], al
   inc di
   loop .copyByte
