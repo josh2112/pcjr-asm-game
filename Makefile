@@ -2,14 +2,14 @@
 # Makefile for PCjr ASM Game project
 #
 NASM=$(USERPROFILE)\AppData\Local\bin\NASM\nasm.exe
-DOSBOX=..\pcjr-asm-game-tools\dosbox\dosbox.exe
-DOSBOX_DBG=..\pcjr-asm-game-tools\dosbox\dosbox_with_debugger.exe
+DOSBOX=..\tools\dosbox\dosbox.exe
+DOSBOX_DBG=..\tools\dosbox\dosbox_with_debugger.exe
 
 RM=cmd \/C del
 
-DOSBOX_CONF=..\pcjr-asm-game-tools\pcjr.dosbox.conf
+DOSBOX_CONF=..\tools\pcjr.dosbox.conf
 
-IMGTOOLS=uv --directory ..\pcjr-asm-game-tools run -m imgtools
+IMGTOOLS=uv --directory ..\tools run -m imgtools
 
 TARGET=fosquest
 TARGET.COM=$(TARGET).com
