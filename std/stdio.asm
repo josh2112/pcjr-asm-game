@@ -7,80 +7,37 @@
 %ifndef STDIO_ASM
 %define STDIO_ASM
 
-section .data
-
-  keyboardState: times 128 db 0
-
-section .bss
-
-  originalInt9h: resb 4
-
 section .text
 
-handle_int9h:
-  push ax
-  push bx
-  pushf
+; read_file( path, size, destination )
+; Reads bytes from a file into a buffer.
+; Args:
+;   bp+4 = path, bp+6 = size,
+;   bp+8 = destination
+read_file:
+  push bp
+  mov bp, sp
 
-  xor ax, ax
-  in al, 0x60         ; Read from keyboard
-  xchg bx, ax
-  test bl, 0x80       ; If high bit is set it's a key release
-  jnz .keyReleased
+  mov ax, 0x3d00   ; Call INT 21h, 3D (open file)
+  mov dx, [bp+4]   ; with DX as the path
+  int 21h
 
-  ; NOTE: Using DS: prefix for keyboard state here because no telling what
-  ; DS will be set to when this is called!
-  .keyPressed:
-    mov byte [cs:keyboardState+bx], 1  ; Turn on that key in the buffer
-    jmp .done
-  .keyReleased:
-    and bl, 0x7f                       ; Remove key-released flag
-    mov byte [cs:keyboardState+bx], 0  ; Turn off that key in the buffer
-  .done:
-    ; Clear keyboard IRQ if pending
-    in al, 0x61     ; Grab keyboard state
-    mov ah, al
-    or al, 0x80
-    out 0x61, al    ; Send state w/ ack bit set
-    xchg al, ah
-    out 0x61, al    ; Send original state
-    ; Signal end-of-interrupt
-    mov al, 0x20
-    out 0x20, al
-    
-    ; Restore state
-    popf
-    pop bx
-    pop ax
-    sti
-    iret
+  mov bx, ax       ; Move newly-opened file handle to BX
+  mov ax, 0x3f00   ; Call INT 21h, 3F (read from file)
+  mov cx, [bp+6]   ; with CX = file size...
+  xor dx, dx
+  push ds          ; (save DS first)
+  mov di, [bp+8]
+  mov ds, di       ; and DS:DX as the read buffer
+  int 21h
+  pop ds
+
+  mov ax, 0x3e00  ; Call INT21h, 3E to close the file
+  int 21h         ; (file handle still in BX)
+
+  pop bp
+  ret 6
 
 
-; Redirect INT9h to the handle_int9h procedure.
-install_keyboard_handler:
-  cli                               ; Disable interrupts
-  xor di, di
-  mov es, di                        ; Set ES to 0
-  mov dx, [es:9h*4]                 ; Copy the offset of the INT 9h handler
-  mov [originalInt9h], dx           ; Store it in oldInt9h
-  mov dx, [es:9h*4+2]               ; Then copy the segment
-  mov [originalInt9h+2], dx         ; Store it in oldInt9h + 2
-  mov word [es:9h*4], handle_int9h  ; Install the new handle - first the offset,
-  mov word [es:9h*4+2], cs          ; then the segment
-  sti                               ; Reenable interrupts
-  ret
-
-
-; Restore default INT9h processing.
-restore_keyboard_handler:
-  cli
-  xor di, di
-  mov es, di
-  mov dx, [originalInt9h]
-  mov word [es:9h*4], dx
-  mov dx, [originalInt9h+2]
-  mov word [es:9h*4+2], dx
-  sti
-  ret
 
 %endif ; STDIO_ASM
