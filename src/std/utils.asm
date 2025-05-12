@@ -2,8 +2,16 @@
 %ifndef UTILS_ASM
 %define UTILS_ASM
 
-; DOSBOX STUFF: DOSBox gives us a tiny block of about 2kb. Expand that to a whole segment.
+; dosbox_fix(): If we're running in DOSBox, expand our tiny memory allocation to the whole segment.
 dosbox_fix:
+push ds         ; If DOSBox, f000:e061 says 'DOSBox'. Just check the first byte for simplicity.
+mov ax, 0f000h
+mov ds, ax
+mov si, 0e061h
+cmp byte [ds:si], 'D' 
+pop ds
+jne .end        ; If not equal, not DOSBox!
+
 mov bx, 1000h
 mov ax, 4a00h
 int 21h         ; Reallocate segment at ES (our PSP) to 64k
@@ -14,6 +22,8 @@ mov sp, bx      ; Set the stack to the top of whatever was allocated
 sub ax, ax
 push ax         ; Push our zero word that DOS expects
 push cx
+
+.end:
 ret
 
 ; Stack management - The stack pointer will likely be in the middle of our framebuffers. If so, move

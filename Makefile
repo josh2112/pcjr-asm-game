@@ -16,7 +16,7 @@ TARGET=fosquest
 TARGET_COM=$(BUILD_DIR)\$(TARGET).com
 TARGET_LST=$(BUILD_DIR)\$(TARGET).lst
 
-SRC_MAIN=$(SRC_DIR)\$(TARGET).asm
+SRC_MAIN=$(SRC_DIR)\main.asm
 DEPS=$(TARGET).dep
 
 DISKIMG_DIR=diskimage
@@ -24,7 +24,7 @@ DISKIMG_DIR=diskimage
 $(TARGET_COM): $(DEPS)
 	if not exist $(BUILD_DIR) mkdir $(BUILD_DIR)
 	$(NASM) -f bin -l $(TARGET_LST) -I $(SRC_DIR) -o $@ $(SRC_MAIN)
-	copy $(ASSETS_DIR)\room1.bin $(BUILD_DIR)
+	copy $(ASSETS_DIR)\*.vec $(BUILD_DIR)
 
 run: $(TARGET_COM)
 	$(DOSBOX) -conf $(DOSBOX_CONF) $<
@@ -38,10 +38,10 @@ cmd: $(TARGET_COM)
 diskimage: $(TARGET_COM)
 	if not exist $(DISKIMG_DIR) mkdir $(DISKIMG_DIR)
 	copy $(BUILD_DIR)\*.com $(DISKIMG_DIR)
-	copy $(BUILD_DIR)\*.bin $(DISKIMG_DIR)
+	copy $(BUILD_DIR)\*.vec $(DISKIMG_DIR)
 # If this fails, check 1) dev drive is mounted, 2) makeimg.sh doesn't have CRLF line endings
-	wsl -e ../pcjr-asm-game-tools/floppyimages/makeimg.sh $(DISKIMG_DIR) -o fosquest.img -f
-	copy fosquest.img f:
+	wsl -e ../tools/floppyimages/makeimg.sh $(DISKIMG_DIR) -o $(TARGET).img -f
+	copy $(TARGET).img f:
 
 clean:
 	del /Q $(BUILD_DIR)\*.* $(DISKIMG_DIR)\*.* $(TARGET_LST) $(DEPS)
