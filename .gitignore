@@ -10,6 +10,5 @@ capture/
 bin/
 diskimage/
 
-*.rsc
 *.img
 *.dep

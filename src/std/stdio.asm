@@ -9,35 +9,49 @@
 
 section .text
 
-; read_file( path, size, destination )
-; Reads bytes from a file into a buffer.
+; read_file( path, destination )
+; Reads all bytes from a file into a buffer. Destination is an offset in
+; DS segment. is an offset in DS segment. Returns immediately if error
+; (check CF=1, then AX for error code)
 ; Args:
-;   bp+4 = path, bp+6 = size,
-;   bp+8 = destination
+;   bp+4 = path, bp+6 = destination
 read_file:
   push bp
   mov bp, sp
 
-  mov ax, 0x3d00   ; Call INT 21h, 3D (open file)
-  mov dx, [bp+4]   ; with DX as the path
-  int 21h
+  mov dx, [bp+4]
+  mov ax, 3d00h
+  int 21h          ; AX = Open file (dx) handle
+  jc .end
 
-  mov bx, ax       ; Move newly-opened file handle to BX
-  mov ax, 0x3f00   ; Call INT 21h, 3F (read from file)
-  mov cx, [bp+6]   ; with CX = file size...
-  xor dx, dx
-  push ds          ; (save DS first)
-  mov di, [bp+8]
-  mov ds, di       ; and DS:DX as the read buffer
-  int 21h
-  pop ds
+  mov bx, ax       ; BX = file handle
+  sub cx, cx
+  sub dx, dx
+  mov ax, 4202h
+  int 21h          ; AX = file length (ignore DX, our files aren't that big)
+  jc .end
 
-  mov ax, 0x3e00  ; Call INT21h, 3E to close the file
-  int 21h         ; (file handle still in BX)
+  push ax          ; Push file size
+  sub cx, cx
+  sub dx, dx
+  mov ax, 4200h
+  int 21h          ; Move back to beginning of file
+  jc .end
 
+  pop cx           ; CX = file size
+  mov dx, [bp+6]   ; DS:DX = destination (assume DS set)
+  mov ax, 3f00h
+  int 21h          ; Read whole file
+  jc .end
+
+  mov ax, 3e00h
+  int 21h          ; close file
+  
+  sub ax, ax
+  jmp .end
+
+.end:
   pop bp
-  ret 6
-
-
+  ret 4
 
 %endif ; STDIO_ASM

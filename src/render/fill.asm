@@ -6,7 +6,7 @@ section .text
 ; ES must be set to framebuffer!
 ; Args: bp+4 = x (2), bp+6 = y (2)
 ; Locals: bp-6 = x1 (2), bp-4 = x2 (2), bp-2 = dy (2)
-fill2:
+fill:
 push bp
 mov bp, sp
 sub sp, 6  ; Make space for locals

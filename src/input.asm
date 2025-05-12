@@ -21,7 +21,7 @@
 ; - Otherwise as long as cursor column is between 2 (start of input line) and 39 (end of input line):
 ;   - Handle backspace.
 ;   - Pass any other key straight through.
-process_keys_2:
+process_keys:
   mov ah, 1     ; Check for keystroke.  If ZF is set, no keystroke.
   int 16h
   jz .done
