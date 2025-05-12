@@ -5,6 +5,7 @@
 [org 100h]
 
 %include 'std/stdio.mac.asm'
+%include 'std/math.mac.asm'
 
 %define DIR_NONE 0
 %define DIR_LEFT 1
@@ -27,6 +28,14 @@ section .data
   text_input_offset: dw 0
 
   path_room1: db "room1.bin", 0
+  
+  vec_color: db 0
+  vec_pos: dw 0
+  vec_dest: dw 0
+  vec_clear_color: db 0xff
+
+  ptr_err: dw 0
+  str_fileError: db "Error reading file$"
 
   is_running: db 1
 
@@ -40,42 +49,20 @@ section .data
 player_icon: dw 14, 16,
   incbin "assets/icon/player.bin"
 
-section .bss
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 section .text
-
-; Stack management - The stack pointer will likely be in the middle of our framebuffers. If so, move it to just before
-; the start of the first buffer. If not (DOSBOX will probably load us above the video memory), skip.
-
-mov ax, ss
-cmp ax, [FRAMEBUFFER_SEG]
-jg stack_fixed   ; If past the end of the framebuffer (SS > FRAMEBUFFER_SEG), all good
-; Else, if past the beginning of our buffers (SS:SP > BACKGROUND_SEG), move SP down appropriately
-mov cl, 4
-shl ax, cl
-add ax, sp  ; Absolute SP
-cmp ax, [BACKGROUND_SEG]
-jl stack_fixed
-mov ax, [BACKGROUND_SEG]
-mov bx, ss
-sub ax, bx
-mov cl, 4
-shl ax, cl
-mov sp, ax       ; SP = (BACKGROUND_SEG - SS) << 4
-xor ax, ax
-push ax          ; Push our zero word that DOS expects
-
-stack_fixed:
 
 ; Get the initial video mode and save it to [originalVideoMode]
 mov ax, 0f00h                ; AH <- 0x0f (get video mode)
 int 10h                      ; Call INT10h fn 0x0f which will store the current video mode in AL
 mov [originalVideoMode], al  ; Store it into the byte pointed to by originalVideoMode.
 
+call dosbox_fix
+call stack_fix
+
 ; Change the video mode to Mode 9 (320x200, 16 colors)
-mov ax, 9h                   ; AH <- 0x00 (set video mode), AL <- 9 (new mode)
+mov ax, 0009h                ; AH <- 0x00 (set video mode), AL <- 9 (new mode)
 int 10h                      ; Call INT10h fn 0 to change the video mode
 
 ; TODO: What is this for?
@@ -313,6 +300,20 @@ ypos_to_priority:
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-%include 'std/stdlib.asm'
-%include 'std/320x200x16.asm'
-%include 'input.asm'
+%include "std/utils.asm"
+
+%include "std/stdio.asm"
+
+%include "std/timer.asm"
+
+%include "render/320x200x16.asm"
+
+%include "render/draw_line.asm"
+
+%include "render/fill.asm"
+
+%include "input.asm"
+
+section .bss
+
+  vec_buf: resb 3000

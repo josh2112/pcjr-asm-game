@@ -6,3 +6,10 @@
 *.BAK
 *.UPX
 capture/
+
+bin/
+diskimage/
+
+*.rsc
+*.img
+*.dep

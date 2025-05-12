@@ -3,27 +3,43 @@
 %ifndef _320X200X16_ASM
 %define _320X200X16_ASM
 
-
 section .data
 
+  ; Framebuffer -- doubled color nibbles
+  ; One byte = info for 2 pixels (color 1 high, color 2 low)
+  ; 4 banks of 50 scanlines each, as per Mode 9 specs
   FRAMEBUFFER_SEG: dw 1800h  ; FB always starts at 18000h
-  COMPOSITOR_SEG: dw 1170h   ; 18000h - 26880 bytes = 11700h
-  BACKGROUND_SEG: dw 0ae0h   ; 11700h - 26880 bytes = 0ae00h
+
+  ; Compositor buffer -- doubled color nibbles
+  ; One byte = info for 2 pixels (color 1 high, color 2 low)
+  ; Straight run, so a pixel is addressed by y*160+x/2
+  ; 11700h = 18000h - 26880 bytes
+  COMPOSITOR_SEG: dw 1170h
+  
+  ; Background buffer -- interleaved depth and color nibbles
+  ; One byte = info for 2 pixels (priority high, color low)
+  ; Straight run, so a pixel is addressed by y*160+x/2
+  ; 0ae00h = 11700h - 26880 bytes
+  BACKGROUND_SEG: dw 0ae0h
   
   room_width_px: dw 320
   room_height_px: dw 168
 
+  ; Nibble-to-byte translation table
+  lut_nibble_to_byte: db 0, 17, 34, 51, 68, 85, 102, 119, 136, 153, 170, 187, 204, 221, 238, 255
+
 section .text
 
-; Duplicates the low nibble of AL in the high nibble. Clobbers AH.
-%macro nibble_to_byte_low 0
-  and al, 0x0f ; Mask out the high 4 bits of the byte
-  mov ah, al   ; Make a copy in AH
-  shl ah, 1    ; Move the low nibble to the high
-  shl ah, 1    ; (by shifting left 4 bytes)
-  shl ah, 1
-  shl ah, 1
-  or al, ah    ; Combine the nibbles
+; Duplicates the low nibble of AL in the high nibble. Clobbers BX
+; TODO: Replace **_low calls with this once we determine BX is OK
+%macro nibble_to_byte 0
+  and al, 0fh
+  push ds                ; TODO: We have to push/pop DS here because the caller uses it.
+  mov bx, cs             ; Is there a way to XLAT without DS?
+  mov ds, bx
+  mov bx, lut_nibble_to_byte
+  xlat
+  pop ds
 %endmacro
 
 
@@ -63,7 +79,7 @@ blt_background_to_compositor:
 
 .copyByte:
   mov al, [ds:di]
-  nibble_to_byte_low
+  nibble_to_byte
   mov byte [es:di], al
   inc di
   loop .copyByte
@@ -215,5 +231,48 @@ draw_icon:
   mov sp, bp
   pop bp
   ret 8
+
+
+; calc_pixel_offset( x, y )
+; Returns the byte offset in the framebuffer for a pixel at (x,y). The range of X is 0-159 since we
+; double pixels horizontally. Clobbers AX, CX, DI.
+; Args: AH = x, AL = y
+; Returns: pixel offset in DI
+calc_pixel_offset:
+  mov di, es
+  cmp di, [BACKGROUND_SEG]
+  je .calc_pixel_offset_bg
+
+  mov di, ax
+
+  shr al, 1       
+  shr al, 1       ; AL = row within bank (Y/4)
+
+  and di, 0b11
+  mov cl, 13
+  shl di, cl      ; DI = byte offset of bank (bank number (0-3) * 0x2000)
+
+  ; Calc byte index of pixel: DI = DI + AL * 160 + AH
+  mov ch, ah       ; Get X out of the way so we can multiply
+  mov cl, 160
+  mul cl           ; AH:AL = AL * 160
+
+  xchg cl, ch
+  xor ch, ch
+  add di, cx       ; ... + CH (x)
+  add di, ax
+
+  ret
+
+  .calc_pixel_offset_bg:
+  ; The background buffer is a straight run... pixel index is just 160y + x
+  mov ch, ah       ; Get X out of the way so we can multiply
+  mov cl, 160
+  mul cl           ; AH:AL = AL * 160
+  xchg cl, ch
+  xor ch, ch
+  add ax, cx
+  xchg di, ax      ; DI = AX + CX
+  ret
 
 %endif ; _320X200X16_ASM

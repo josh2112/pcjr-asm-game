@@ -1,41 +1,53 @@
-#
-# Makefile for PCjr ASM Game project
-#
+SHELL := cmd.exe
+
+TOOLS=..\tools
+
 NASM=$(USERPROFILE)\AppData\Local\bin\NASM\nasm.exe
-DOSBOX=..\tools\dosbox\dosbox.exe
-DOSBOX_DBG=..\tools\dosbox\dosbox_with_debugger.exe
+DOSBOX=$(TOOLS)\dosbox\dosbox.exe
+DOSBOX_DBG=$(TOOLS)\dosbox\dosbox_with_debugger.exe
 
-RM=cmd \/C del
+DOSBOX_CONF=$(TOOLS)\pcjr.dosbox.conf
 
-DOSBOX_CONF=..\tools\pcjr.dosbox.conf
-
-IMGTOOLS=uv --directory ..\tools run -m imgtools
+SRC_DIR=src
+BUILD_DIR=bin
+ASSETS_DIR=assets
 
 TARGET=fosquest
-TARGET.COM=$(TARGET).com
+TARGET_COM=$(BUILD_DIR)\$(TARGET).com
+TARGET_LST=$(BUILD_DIR)\$(TARGET).lst
 
-DEPS=std/stdio.mac.asm std/stdlib.asm std/320x200x16.asm std/stdio.asm input.asm
+SRC_MAIN=$(SRC_DIR)\$(TARGET).asm
+DEPS=$(TARGET).dep
 
-IMG_PLAYER=assets\icon\player.bin
-IMG_ROOM1=room1.bin
+DISKIMG_DIR=diskimage
 
-ASSETS=$(IMG_PLAYER) $(IMG_ROOM1)
+$(TARGET_COM): $(DEPS)
+	if not exist $(BUILD_DIR) mkdir $(BUILD_DIR)
+	$(NASM) -f bin -l $(TARGET_LST) -I $(SRC_DIR) -o $@ $(SRC_MAIN)
+	copy $(ASSETS_DIR)\room1.bin $(BUILD_DIR)
 
-$(TARGET.COM): $(TARGET).asm $(DEPS) $(ASSETS)
-	$(NASM) -f bin -l $(TARGET).lst -o $@ $<
-
-run: $(TARGET.COM)
+run: $(TARGET_COM)
 	$(DOSBOX) -conf $(DOSBOX_CONF) $<
 
-debug: $(TARGET.COM)
-	$(DOSBOX_DBG) -conf $(DOSBOX_CONF) -c "mount c: ." -c "c:" -c "debug $^"
+debug: $(TARGET_COM)
+	$(DOSBOX_DBG) -conf $(DOSBOX_CONF) -c "mount c: bin" -c "c:" -c "debug $(TARGET).com"
 
+cmd: $(TARGET_COM)
+	$(DOSBOX) -conf $(DOSBOX_CONF) -c "mount c: bin" -c "c:"
 
-$(IMG_PLAYER): assets\icon\player.png
-	$(IMGTOOLS) packicon -fo $(CURDIR)\$@ $(CURDIR)\$<
-
-$(IMG_ROOM1): assets\room1\room1-color.png assets\room1\room1-depth.png
-	$(IMGTOOLS) pack -fo $(CURDIR)\$@ -c $(CURDIR)\$(word 1,$^) -d $(CURDIR)\$(word 2,$^)"
+diskimage: $(TARGET_COM)
+	if not exist $(DISKIMG_DIR) mkdir $(DISKIMG_DIR)
+	copy $(BUILD_DIR)\*.com $(DISKIMG_DIR)
+	copy $(BUILD_DIR)\*.bin $(DISKIMG_DIR)
+# If this fails, check 1) dev drive is mounted, 2) makeimg.sh doesn't have CRLF line endings
+	wsl -e ../pcjr-asm-game-tools/floppyimages/makeimg.sh $(DISKIMG_DIR) -o fosquest.img -f
+	copy fosquest.img f:
 
 clean:
-	$(RM) $(TARGET.COM) $(ASSETS)
+	del /Q $(BUILD_DIR)\*.* $(DISKIMG_DIR)\*.* $(TARGET_LST) $(DEPS)
+
+$(DEPS):
+	$(NASM) -M -MF $(DEPS) -MT $(TARGET_COM) -I $(SRC_DIR) $(SRC_MAIN)
+
+	
+-include $(DEPS)
