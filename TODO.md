@@ -1,10 +1,8 @@
 # TODO
 
+- Add support for reading from ROM BIOS area (0xf0000-0xfffff) to EmuJr
+
 - Depth vector drawing seems to work? Maybe more testing?
-
-- If we call dosbox_fix(), PCjr throws "Memory allocation error; cannot load COMMAND, system halted" on exit. Freeing the memory (with int 21, 49) does not help.
-
-  - Need to detect if running inside DOSBOX and don't call dosbox_fix() otherwise!
 
 - Add depth info to room1.rsc (using the existing room1-depth.png as an overlay)
 
