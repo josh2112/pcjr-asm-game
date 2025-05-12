@@ -6,6 +6,13 @@
 %ifndef STDLIB_ASM
 %define STDLIB_ASM
 
+; TODO: Abrash on converting a binary digit to hex ASCII:
+; ADD  AL,90H
+; DAA
+; ADC  AL,40H
+; DAA
+
+
 ; Converts the signed integer in AX to a string and puts it in [DI]
 ; Returns the result (the original DI pointer) in AX
 ; Clobbers BX, CX, DX

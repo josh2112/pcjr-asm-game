@@ -30,16 +30,11 @@ section .data
 
 section .text
 
-; Duplicates the low nibble of AL in the high nibble. Clobbers BX
-; TODO: Replace **_low calls with this once we determine BX is OK
+; Duplicates the low nibble of AL in the high nibble. Clobbers BX.
 %macro nibble_to_byte 0
   and al, 0fh
-  push ds                ; TODO: We have to push/pop DS here because the caller uses it.
-  mov bx, cs             ; Is there a way to XLAT without DS?
-  mov ds, bx
   mov bx, lut_nibble_to_byte
-  xlat
-  pop ds
+  cs xlat               ; Use the CS segment since DS may be tied up by the caller
 %endmacro
 
 
@@ -76,6 +71,9 @@ blt_background_to_compositor:
   push cx
   mov cx, [bp+8]
   shr cx, 1        ; Because each byte encodes 2 pixels
+
+  ; TODO: Can we fastify this using lodsb and stosb? SI = DI.
+  ; For that matter, do we need to push/pop ES & DS? The bitmap copying functions should all set them.
 
 .copyByte:
   mov al, [ds:di]
@@ -158,7 +156,7 @@ blt_compositor_to_framebuffer:
   pop bp
   ret 8
 
-
+; TODO: This needs some major optimization.
 ; draw_icon( icon_ptr, icon_priority, x, y )
 ; Copies icon data into the compositor at the specified position. Black
 ; pixels are treated as transparent (not copied). At each pixel, the
@@ -232,7 +230,6 @@ draw_icon:
   pop bp
   ret 8
 
-
 ; calc_pixel_offset( x, y )
 ; Returns the byte offset in the framebuffer for a pixel at (x,y). The range of X is 0-159 since we
 ; double pixels horizontally. Clobbers AX, CX, DI.
@@ -273,6 +270,53 @@ calc_pixel_offset:
   xor ch, ch
   add ax, cx
   xchg di, ax      ; DI = AX + CX
+  ret
+
+; copy_framebuffer_to_background()
+; Copy the low nibble of each FB byte into its place in the BB
+copy_framebuffer_to_background:
+  push ds
+  push es
+  mov es, [BACKGROUND_SEG]
+  mov ds, [FRAMEBUFFER_SEG]
+
+  sub dx, dx      ; line count
+  sub di, di
+
+  .copyLine:
+  mov ax, dx
+  mov si, ax
+
+  and si, 0b11
+  mov cl, 13
+  shl si, cl      ; SI = byte offset of bank (bank number (0-3) * 0x2000)
+
+  shr al, 1       
+  shr al, 1       ; AL = row within bank (Y/4)
+
+  ; Calc byte index of first pixel in line: SI = SI + AL * 160
+  mov cl, 160
+  mul cl           ; AH:AL = AL * 160
+
+  add si, ax
+
+  mov cx, 160
+
+  .copyByte:
+  lodsb
+  and al, 0fh     ; AL = low nibble of FB byte
+  mov ah, [es:di]
+  and ah, 0f0h     ; AH = high nibble of BG byte
+  or al, ah
+  stosb
+  loop .copyByte
+
+  inc dx
+  cmp dx, 168
+  jne .copyLine
+
+  pop es
+  pop ds
   ret
 
 %endif ; _320X200X16_ASM

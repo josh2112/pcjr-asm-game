@@ -65,11 +65,6 @@ call stack_fix
 mov ax, 0009h                ; AH <- 0x00 (set video mode), AL <- 9 (new mode)
 int 10h                      ; Call INT10h fn 0 to change the video mode
 
-; TODO: What is this for?
-mov ax, 0582h                ; AH = 0x05 (CPU/CRT page registers), AL = 0x82 (set CRT page register)
-mov bx, 0600h                ; BH = Page 6, matching our FRAMEBUFFER_SEG
-int 10h                      ; Call INT10h fn 0x05 to set CRT page register to 6
-
 push word [BACKGROUND_SEG]
 mov ax, [room_width_px]
 mov bx, [room_height_px]
@@ -168,18 +163,23 @@ game_loop:
 
 
 clean_up:
-
 ; Change the video mode back to whatever it was before (the value stored in
 ; originalVideoMode)
 mov al, [originalVideoMode]
 xor ah, ah
 int 10h
 
+mov dx, [ptr_err]
+test dx, dx
+jz exit
+println dx
+
+exit:
 ; Exit the program
 mov ax, 4c00h
 int 21h
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 move_player:
   mov bl, [player_walk_dir]
@@ -298,7 +298,7 @@ ypos_to_priority:
 .done:
   ret
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 %include "std/utils.asm"
 
