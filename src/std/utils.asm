@@ -10,8 +10,10 @@ mov ds, ax
 mov si, 0e061h
 cmp byte [ds:si], 'D' 
 pop ds
-jne .end        ; If not equal, not DOSBox!
+je .is_dosbox
+ret
 
+.is_dosbox:
 mov bx, 1000h
 mov ax, 4a00h
 int 21h         ; Reallocate segment at ES (our PSP) to 64k
@@ -22,8 +24,6 @@ mov sp, bx      ; Set the stack to the top of whatever was allocated
 sub ax, ax
 push ax         ; Push our zero word that DOS expects
 push cx
-
-.end:
 ret
 
 ; Stack management - The stack pointer will likely be in the middle of our framebuffers. If so, move
