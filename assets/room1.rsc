@@ -923,9 +923,8 @@
       {
         "$type": "polyline",
         "Points": [
-          "25, 115",
-          "19, 122",
-          "19, 123"
+          "24, 116",
+          "18, 123"
         ],
         "Color": "#FF000000"
       },
@@ -1016,13 +1015,6 @@
           }
         ],
         "Name": "Roof 2"
-      },
-      {
-        "$type": "fill",
-        "Points": [
-          "23, 120"
-        ],
-        "Color": "#FFAA0000"
       },
       {
         "$type": "fill",
@@ -2055,9 +2047,49 @@
     "Name": "(color)"
   },
   "DepthShapes": {
-    "Children": [],
+    "Children": [
+      {
+        "$type": "polyline",
+        "Points": [
+          "110, 154",
+          "115, 157",
+          "119, 157",
+          "125, 156",
+          "127, 154",
+          "127, 139",
+          "124, 136",
+          "120, 135",
+          "118, 135",
+          "113, 136",
+          "110, 139",
+          "110, 153"
+        ],
+        "Color": "#FFFF55FF"
+      },
+      {
+        "$type": "fill",
+        "Points": [
+          "121, 149"
+        ],
+        "Color": "#FFFF55FF"
+      },
+      {
+        "$type": "polyline",
+        "Points": [
+          "111, 155",
+          "110, 159",
+          "117, 161",
+          "126, 159",
+          "126, 154",
+          "122, 152",
+          "116, 152",
+          "111, 155"
+        ],
+        "Color": "#FF000000"
+      }
+    ],
     "Name": "(depth)"
   },
-  "Path": "D:\\Repos\\josh2112\\pcjr-asm-game\\main\\assets\\room1-opt.rsc",
-  "ImageOverlayPath": null
+  "Path": "D:\\Repos\\josh2112\\pcjr-asm-game\\main\\assets\\room1.rsc",
+  "ImageOverlayPath": "D:\\Repos\\josh2112\\pcjr-asm-game\\main\\assets\\room1\\room1-depth.png"
 }

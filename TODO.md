@@ -1,6 +1,6 @@
 # TODO
 
-- Add support for reading from ROM BIOS area (0xf0000-0xfffff) to EmuJr
+- EmuJr: Implement player bounding at screen edges and skeleton lines
 
 - Depth vector drawing seems to work? Maybe more testing?
 
@@ -14,7 +14,8 @@
 
 |      Date | DOSBox | PCjr | Notes                                            |
 | --------: | -----: | ---: | ------------------------------------------------ |
-|  5/1/2025 |   5:33 |      |                                                  |
-|  5/4/2025 |        | 5:61 | Conversion of calc_pixel_offset to 1-byte values |
-|  5/5/2025 |        | 6:92 | With depth rendering + copy                      |
-| 5/12/2025 |   8:04 | 8:29 | Added copy background to compositor              |
+|  5/1/2025 |   5.33 |      |                                                  |
+|  5/4/2025 |        | 5.61 | Conversion of calc_pixel_offset to 1-byte values |
+|  5/5/2025 |        | 6.92 | Added copy FB to BG                              |
+| 5/12/2025 |   8.04 | 8.29 | Added copy BG to compositor                      |
+| 5/14/2025 |   8.35 | 8.24 | Optimization of vector file                      |
