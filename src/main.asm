@@ -317,11 +317,26 @@ move_player:
 ; 1 = water
 ; 15 = room boundary
 bound_player:
-  cmp word [player_y], 0
-  jne .not_at_top
+  mov ax, [player_y]
+  add ax, [player_icon+2]    ; AX = player foot line
+  cmp ax, 48
+  jle .bounce_back
+  cmp ax, 168
+  jg .bounce_back
+  mov ax, [player_x]
+  cmp ax, 0
+  jl .bounce_back
+  add ax, [player_icon]
+  cmp ax, 320
+  jg .bounce_back
+
+  jmp .didnt_hit_wall
+  
+  .bounce_back:
   call bounce_back
   ret
-  .not_at_top:
+
+  .didnt_hit_wall:
   mov ax, [player_y]
   add ax, [player_icon+2]
   dec ax     ; AX = player foot-line
