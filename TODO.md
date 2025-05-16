@@ -1,7 +1,5 @@
 # TODO
 
-- On PCjr, backspace causes the screen to have a stroke (whether there's a character to erase or not)
-
 - Could fill() be rewritten to take 1-byte values since X axis only goes to 160 now?
 
 # Timings
