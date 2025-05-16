@@ -97,11 +97,14 @@ toggle_walk:
 ; Backspace only backs up the cursor. To actually clear the character we'll
 ; send three characters: backspace, space, backspace.
 process_key_backspace:
-  mov ax, 0x0e08
+  mov ax, 0e08h
+  mov bl, 7
   int 10h
-  mov al, 0x20
+  mov ax, 0e20h
+  mov bl, 7
   int 10h
-  mov al, 0x08
+  mov ax, 0e08h
+  mov bl, 7
   int 10h
   ret
 
@@ -110,21 +113,21 @@ process_key_backspace:
 ; - Check cursor row: if 24 or less, send a line feed.
 ; - Otherwise, scroll just the text area.
 advance_to_next_line:
-  mov ax, 0x0e0d
+  mov ax, 0e0dh
   int 10h      ; Send carriage return
   mov ah, 3     
   xor bh, bh
   int 10h      ; Get cursor position. Row is in DH.
   cmp dh, 24
   jge .scroll
-  mov ax, 0x0e0a
+  mov ax, 0e0ah
   int 10h      ; Send line feed
   ret
   .scroll:
-    mov ax, 0x0601 ; Scroll by 1 line
+    mov ax, 0601h  ; Scroll by 1 line
     xor bh, bh     ; No attributes
-    mov cx, 0x1500 ; Upper left = row 20, col 0
-    mov dx, 0x1827 ; Lower right = row 24, col 39
+    mov cx, 1500h ; Upper left = row 20, col 0
+    mov dx, 1827h ; Lower right = row 24, col 39
     int 10h
     ret
 
