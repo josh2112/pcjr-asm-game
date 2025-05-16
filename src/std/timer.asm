@@ -1,9 +1,7 @@
 section .bss
 
-Minutes:  resb 1
-Hours:	  resb 1
-Sec100:   resb 1
-Seconds:  resb 1
+timer_hundredths:   resb 1
+timer_seconds:  resb 1
 
 section .data
 
@@ -15,38 +13,22 @@ section .text
 StartTime:
 	MOV	AH,2CH		;Get time function
     INT 21h         ;Get starting time
-	MOV	word [Minutes],CX	;Save starting time
-	MOV	word [Sec100], DX	; ..
+	MOV	word [timer_hundredths], DX	; ..
 	RET                     ; ..
 
 ; Retrieve end time and calculate elapsed
 EndTime:
 	MOV	AH,2CH		;Get time function
     INT 21h         ;Get ending time
-	SUB	DL,[Sec100]	;Calculate hundreds of seconds
+	SUB	DL,[timer_hundredths]	;Calculate hundredths of seconds
 	JNC	.SubSec		; ..
 	ADD	DL,100		; ..
 	DEC	DH		; ..
 .SubSec:
-	MOV	[Sec100],DL	;Save hundreds of seconds
-	SUB	DH,[Seconds]	;Calculate seconds
-	JNC	.SubMin		; ..
-	ADD	DH,60		; ..
-	DEC	CL		; ..
-.SubMin:
-	MOV	[Seconds],DH	;Save seconds
-	SUB	CL,[Minutes]	;Calculate minutes
-	JNC	.SubHrs		; ..
-	ADD	CL,60		; ..
-	DEC	CH		; ..
-.SubHrs:
-	MOV	[Minutes],CL	;Save minutes
-	SUB	CH,[Hours]	;Calculate hours
-    JNC .SubHrs1         ; ..
-	ADD	CH,24		; ..
-.SubHrs1:
-	MOV	[Hours],CH	;Save hours
-    RET                     ; ..
+	MOV	[timer_hundredths],DL	;Save hundreds of seconds
+	SUB	DH,[timer_seconds]	;Calculate seconds
+	MOV	[timer_seconds],DH	;Save seconds
+	RET                     ; ..
 
 ;Print the total time
 PrintTime:
@@ -54,23 +36,13 @@ PrintTime:
 	mov di, cs
 	mov es, di
 	STD			;Make sure string ops go backward
-	MOV	DL,[Hours]	;Print the hours
-	CALL	Bin2Dec		; ..
-	MOV	AH,2		;Print a colon
-	MOV	DL,':'		; ..
-    INT     21h             ; ..
-	MOV	DL,[Minutes]	;Print the minutes
-	CALL	Bin2Dec		; ..
-	MOV	AH,2		;Print a colon
-	MOV	DL,':'		; ..
-    INT     21h             ; ..
-	MOV	DL,[Seconds]	;Print the seconds
+	MOV	DL,[timer_seconds]	;Print the seconds
 	CALL	Bin2Dec		; ..
 	MOV	AH,2		;Print a period
 	MOV	DL,'.'		; ..
 	
     INT     21h             ; ..
-	MOV	DL,[Sec100]	;Print the hundred of seconds
+	MOV	DL,[timer_hundredths]	;Print the hundred of seconds
 	CALL	Bin2Dec		; ..
 	pop es
 	clc            ; Reset carry/direction flags
