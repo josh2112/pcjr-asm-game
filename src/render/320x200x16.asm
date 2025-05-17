@@ -47,8 +47,7 @@ blt_background_to_compositor:
   push bp
   mov bp, sp
 
-  push ds            ; Set DS to source and
-  push es            ; ES to destination
+  push ds
   mov es, [COMPOSITOR_SEG]
   mov ds, [BACKGROUND_SEG]
 
@@ -66,26 +65,22 @@ blt_background_to_compositor:
   mul bx           ; AX *= 320
   add ax, [bp+4]   ; ... + x
   shr ax, 1        ; ... / 2
+  mov si, ax
   mov di, ax
-
+  
   push cx
   mov cx, [bp+8]
   shr cx, 1        ; Because each byte encodes 2 pixels
 
-  ; TODO: Can we fastify this using lodsb and stosb? SI = DI.
-  ; For that matter, do we need to push/pop ES & DS? The bitmap copying functions should all set them.
-
 .copyByte:
-  mov al, [ds:di]
+  lodsb
   nibble_to_byte
-  mov byte [es:di], al
-  inc di
+  stosb
   loop .copyByte
 
   pop cx
   loop .copyLine
 
-  pop es          ; Restore our segment registers
   pop ds
   pop bp
   ret 8
@@ -276,7 +271,6 @@ calc_pixel_offset:
 ; Copy the low nibble of each FB byte into its place in the BB
 copy_framebuffer_to_background:
   push ds
-  push es
   mov es, [BACKGROUND_SEG]
   mov ds, [FRAMEBUFFER_SEG]
 
@@ -288,7 +282,7 @@ copy_framebuffer_to_background:
   mov si, ax
 
   and si, 0b11
-  mov cl, 13
+  mov cx, 13; mov cl, 13
   shl si, cl      ; SI = byte offset of bank (bank number (0-3) * 0x2000)
 
   shr al, 1       
@@ -300,7 +294,7 @@ copy_framebuffer_to_background:
 
   add si, ax
 
-  mov cx, 160
+  ;mov cx, 160 ; CX is still 160 here (from the mul)
 
   .copyByte:
   lodsb
@@ -315,7 +309,6 @@ copy_framebuffer_to_background:
   cmp dx, 168
   jne .copyLine
 
-  pop es
   pop ds
   ret
 

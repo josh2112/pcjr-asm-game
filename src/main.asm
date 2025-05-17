@@ -78,6 +78,11 @@ mov dx, 1600h    ; line 21 (0x15), col 0 (0x0)
 mov ah, 2       ; Call "set cursor"
 int 10h
 print text_prompt
+;print_cursor
+mov ax, 0a5fh
+mov bx, 07h
+mov cx, 1
+int 10h
 
 game_loop:
 

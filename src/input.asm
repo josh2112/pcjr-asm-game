@@ -13,6 +13,13 @@
 
 %include 'std/stdio.asm'
 
+%macro print_cursor 0
+mov ax, 0a5fh
+mov bx, 07h
+mov cx, 1
+int 10h
+%endmacro
+
 ; Process any keystrokes in the keyboard buffer. Strategy:
 ; - Look for special key:
 ;   - Handle ESC as quit the program.
@@ -82,6 +89,7 @@ process_keys:
     mov ah, 0x0e
     mov bl, 7     ; Text color
     int 10h
+    print_cursor
   .done:
     ret
 
@@ -106,6 +114,7 @@ process_key_backspace:
   mov ax, 0e08h
   mov bl, 7
   int 10h
+  print_cursor
   ret
 
 ; We can't send a line feed - if the cursor is already on the last line, it'll scroll the whole screen. So:
