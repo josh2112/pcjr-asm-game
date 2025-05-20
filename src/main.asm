@@ -27,7 +27,7 @@ section .data
   text_input: times 64 db '$'
   text_input_offset: dw 0
 
-  path_room1: db "room1.vec", 0
+  path_room1: db "testfill.vec", 0
   
   vec_color: db 0
   vec_pos: dw 0

@@ -4,158 +4,152 @@ section .text
 ; fill( x, y ) - combined scan-and-fill span filler
 ; https://en.wikipedia.org/wiki/Flood_fill
 ; ES must be set to framebuffer!
-; Args: bp+4 = x (2), bp+6 = y (2)
-; Locals: bp-6 = x1 (2), bp-4 = x2 (2), bp-2 = dy (2)
+; Args: bp+4 = x, bp+5 = y
+; Locals: bp-6 = x1, bp-5 = y, bp-4 = x2, bp-3 = dy
 fill:
-push bp
-mov bp, sp
-sub sp, 6  ; Make space for locals
+    push bp
+    mov bp, sp
+    sub sp, 4  ; Make space for locals
 
-mov dl, [vec_clear_color]
+    ; x = 79h, y = 91h
 
-mov ax, 1
-push ax
-push word [bp+6]
-push word [bp+4]
-push word [bp+4]  ; Push( x, x, y, 1 )
+    mov dl, [vec_clear_color]
 
-mov ax, -1
-push ax
-mov ax, [bp+6]
-dec ax
-push ax
-push word [bp+4]
-push word [bp+4]  ; Push( x, x, y-1, -1 )
+    mov al, [bp+4]    ; x
+    mov ah, 1
+    push ax
+    push word [bp+4]  ; Push( x, y, x, 1 )
 
-.while_stack_not_empty:
-pop word [bp-6]
-pop word [bp-4]
-pop word [bp+6]
-pop word [bp-2]  ; Pop( x1, x2, y, dy )
-mov bx, [bp-6]
-mov [bp+4], bx  ; let x = x1
+    neg ah
+    push ax           ; x, -1
+    add ah, [bp+5]    ; x, y-1
+    push ax  ; Push( x, y-1, x, -1 )
 
-mov ah, bl      ; x
-mov al, [bp+6]  ; y
-call calc_pixel_offset
-cmp byte [es:di], dl  ; inside( x, y )
-jne .while_x1_le_x2
+    .while_stack_not_empty:
+    pop word [bp-6]
+    pop word [bp-4] ; Pop( x1, y, x2, dy )
+    mov bl, [bp-6]
+    mov [bp+4], bl  ; let x = x1
 
-.while_inside_x_minus_1_y:
-; DI is already set to x, y... just subtract 1 for x-1,y
-dec di
+    mov ah, bl      ; x
+    mov al, [bp-5]  ; y
+    call calc_pixel_offset
+    cmp byte [es:di], dl  ; inside( x, y )
+    jne .while_x1_le_x2
 
-cmp byte [es:di], dl  ; inside( x-1, y )
-jne .if_x_le_x1
+    .while_inside_x_minus_1_y:
+    ; DI is already set to x, y... just subtract 1 for x-1,y
+    dec di
 
-mov al, [vec_color]
-nibble_to_byte
-mov byte [es:di], al  ; set( x-1, y )
+    cmp byte [es:di], dl  ; inside( x-1, y )
+    jne .if_x_le_x1
 
-dec word [bp+4]  ; x -= 1
+    mov al, [vec_color]
+    nibble_to_byte
+    mov byte [es:di], al  ; set( x-1, y )
 
-jmp .while_inside_x_minus_1_y
+    dec byte [bp+4]  ; x -= 1
 
-.if_x_le_x1:
-mov ax, [bp-2]
-neg ax
-push ax
-add ax, [bp+6]
-push ax
-mov ax, [bp-6]
-dec ax
-push ax
-push word [bp+4]   ; push( x, x1-1, y-dy, -dy)
+    jmp .while_inside_x_minus_1_y
 
-.while_x1_le_x2:
+    .if_x_le_x1:
+    mov al, [bp-6]
+    dec al
+    mov ah, [bp-3]
+    neg ah
+    push ax
+    add ah, [bp-5]
+    mov al, [bp+4]
+    push ax          ; push( x, y-dy, x1-1, -dy)
 
-mov ax, [bp-6]
-cmp ax, [bp-4]
-jg .end
+    .while_x1_le_x2:
 
-mov ah, [bp-6]
-mov al, [bp+6]
-call calc_pixel_offset
+    mov ah, [bp-6]
+    cmp ah, [bp-4]
+    jg .end
 
-.while_inside_x1_y:
+    mov al, [bp-5]
+    call calc_pixel_offset
 
-cmp byte [es:di], dl  ; inside( x1, y )
-jne .if_x1_gt_x
+    .while_inside_x1_y:
 
-mov al, [vec_color]
-nibble_to_byte
-stosb                          ; set( x1, y )
+    cmp byte [es:di], dl  ; inside( x1, y )
+    jne .if_x1_gt_x
 
-inc word [bp-6]     ; x1 += 1
+    mov al, [vec_color]
+    nibble_to_byte
+    stosb                          ; set( x1, y )
 
-jmp .while_inside_x1_y
+    inc byte [bp-6]     ; x1 += 1
 
-.if_x1_gt_x:
-mov ax, [bp-6]
-cmp ax, [bp+4]
-jle .if_x1_minus_1_gt_x2
+    jmp .while_inside_x1_y
 
-mov ax, [bp-2]
-push ax
-add ax, [bp+6]
-push ax
-mov ax, [bp-6]
-dec ax
-push ax
-push word [bp+4]  ; push( x, x1-1, y+dy, dy)
+    .if_x1_gt_x:
+    mov al, [bp-6]
+    cmp al, [bp+4]
+    jle .if_x1_minus_1_gt_x2
 
-.if_x1_minus_1_gt_x2:
+    mov al, [bp-6]
+    dec al
+    mov ah, [bp-3]
+    push ax
+    add ah, [bp-5]
+    mov al, [bp+4]
+    push ax
+    push word [bp+4]  ; push( x, y+dy, x1-1, dy)
 
-mov ax, [bp-6]
-dec ax
-cmp ax, [bp-4]  ; if x1 - 1 > x2
-jle .x1_equals_x1_plus_1
+    .if_x1_minus_1_gt_x2:
 
-mov ax, [bp-2]
-neg ax
-push ax
-add ax, [bp+6]
-push ax
-mov ax, [bp-6]
-dec ax
-push ax
-mov ax, [bp-4]
-inc ax
-push ax   ; push( x2+1, x1-1, y-dy, -dy)
+    mov al, [bp-6]
+    dec al
+    cmp al, [bp-4]  ; if x1 - 1 > x2
+    jle .x1_equals_x1_plus_1
 
-.x1_equals_x1_plus_1:
+    mov al, [bp-6]
+    dec al           ; x1-1
+    mov ah, [bp-3]
+    neg ah           ; -dy
+    push ax
+    add ah, [bp-5]   ; y-dy
+    mov al, [bp-4]
+    inc al           ; x2+1
+    push ax          ; push( x2+1, y-dy, x1-1, -dy)
 
-inc word [bp-6]  ; x1 += 1
+    .x1_equals_x1_plus_1:
 
-.while_x1_lt_x2_and_not_inside_x1_y:
+    inc byte [bp-6]  ; x1 += 1
 
-mov bx, [bp-6]
-cmp bx, [bp-4]
-jge .x_equals_x1
+    .while_x1_lt_x2_and_not_inside_x1_y:
+    ; Args: bp+4 = x, bp+5 = y
+    ; Locals: bp-6 = x1, bp-5 = y, bp-4 = x2, bp-3 = dy
 
-mov ah, bl
-mov al, [bp+6]
-call calc_pixel_offset
-cmp byte [es:di], dl  ; inside( x1, y )
+    mov bl, [bp-6]
+    cmp bl, [bp-4]
+    jge .x_equals_x1
 
-je .x_equals_x1
+    mov ah, bl        ; x1
+    mov al, [bp-5]
+    call calc_pixel_offset
+    cmp byte [es:di], dl  ; inside( x1, y )
 
-inc word [bp-6]  ; x1 += 1
+    je .x_equals_x1
 
-jmp .while_x1_lt_x2_and_not_inside_x1_y
+    inc byte [bp-6]  ; x1 += 1
 
-.x_equals_x1:
-mov ax, [bp-6]
-mov [bp+4], ax  ; x = x1
+    jmp .while_x1_lt_x2_and_not_inside_x1_y
 
-jmp .while_x1_le_x2
+    .x_equals_x1:
+    mov al, [bp-6]
+    mov [bp+4], al  ; x = x1
 
-.end:
-mov ax, bp
-sub ax, sp
-sub ax, 6 ; locals
-jnz .while_stack_not_empty
+    jmp .while_x1_le_x2
 
-mov sp, bp
-pop bp
-ret 4 ; size of args
+    .end:
+    mov ax, bp
+    sub ax, sp
+    sub ax, 4 ; locals
+    jnz .while_stack_not_empty
+
+    mov sp, bp
+    pop bp
+    ret 2 ; size of args

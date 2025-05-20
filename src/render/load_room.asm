@@ -73,12 +73,7 @@ loadRoom:
   .cmp_fill:
   cmp al, 'F'
   jne .cmp_begindepth
-  mov al, [vec_pos+1]
-  sub ah, ah
-  push ax
-  mov al, [vec_pos]
-  sub ah, ah
-  push ax
+  push word [vec_pos]
   call fill           ; Fill
   jmp .read_next_cmd
 
