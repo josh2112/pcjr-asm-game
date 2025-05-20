@@ -194,26 +194,26 @@ draw_icon:
   mov cx, [bp-2]
   shr cx, 1        ; Because each byte encodes 2 pixels
 
+  mov dl, 4        ; Will be exchanged with cl to shift inside the loop
+
 .copyByte:
-  mov al, [ds:si]
+  lodsb
   ; If sprite pixel is transparent, skip it.
   test al, al
   jz .afterCopyByte
   ; If sprite has a lower priority than corresponding base pixel, skip it.
   push es
-  push cx
   mov es, [BACKGROUND_SEG]
   mov bl, [es:di]
-  mov cl, 4
+  xchg cl, dl
   shr bl, cl    ; Get the priority into BL
-  pop cx
+  xchg cl, dl
   pop es
   cmp bl, [bp+6]
   jge .afterCopyByte
 
   mov byte [es:di], al
 .afterCopyByte:
-  inc si
   inc di
   loop .copyByte
 
