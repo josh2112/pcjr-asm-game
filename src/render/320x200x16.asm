@@ -282,19 +282,17 @@ copy_framebuffer_to_background:
   mov si, ax
 
   and si, 0b11
-  mov cx, 13; mov cl, 13
+  mov cx, 13
   shl si, cl      ; SI = byte offset of bank (bank number (0-3) * 0x2000)
 
-  shr al, 1       
-  shr al, 1       ; AL = row within bank (Y/4)
+  shr ax, 1       
+  shr ax, 1       ; AL = row within bank (Y/4)
 
   ; Calc byte index of first pixel in line: SI = SI + AL * 160
-  mov cl, 160
+  mov cx, 160
   mul cl           ; AH:AL = AL * 160
 
   add si, ax
-
-  ;mov cx, 160 ; CX is still 160 here (from the mul)
 
   .copyByte:
   lodsb

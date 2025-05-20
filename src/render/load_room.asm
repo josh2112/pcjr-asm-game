@@ -3,7 +3,6 @@ section .data
     label_timer_color: db "cl $"
     label_timer_depth: db "  dp $"
     label_timer_f2b:  db "  f2b $"
-    label_timer_b2c:  db "  b2c $"
 
 section .text
 
@@ -113,18 +112,6 @@ loadRoom:
   call EndTime
   print label_timer_f2b
   call PrintTime ; Print time for vector drawing and reset the timer
-  call StartTime
-
-  push word [room_height_px]
-  push word [room_width_px]
-  xor ax, ax
-  push ax
-  push ax
-  call blt_background_to_compositor ; Copy whole background to compositor
-
-  call EndTime
-  print label_timer_b2c
-  call PrintTime ; Print time for FB -> BB -> CMP copy
   
   .end:
   ret

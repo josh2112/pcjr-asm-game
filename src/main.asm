@@ -27,7 +27,7 @@ section .data
   text_input: times 64 db '$'
   text_input_offset: dw 0
 
-  path_room1: db "cube.vec", 0
+  path_room1: db "room1.vec", 0
   
   vec_color: db 0
   vec_pos: dw 0
@@ -102,26 +102,7 @@ game_loop:
   call move_player
   call bound_player
   
-  ; 1) Copy rectangle covering player's previous location from background to compositor
-  push word [player_icon+2]
-  push word [player_icon+0]
-  push word [player_y_prev]
-  push word [player_x_prev]
-  call blt_background_to_compositor
-
-  ; 2) Draw the player icon in its new location in the compositor
-  mov ax, [player_y]
-  add ax, [player_icon+2]
-  dec ax
-  call ypos_to_priority  ; AX = priority of player (taken at foot line)
-  push word [player_y]
-  push word [player_x]
-  push ax                ; Push prioirity calculated earlier
-  mov ax, player_icon    
-  push ax                ; Pointer to player icon W,H
-  call draw_icon
-
-  ; Combine player previous and current rect:
+  ; 1) Combine player's previous and current rectangles
   mov ax, [player_x]
   mov cx, [player_x_prev]
   sub cx, ax
@@ -139,12 +120,32 @@ game_loop:
     neg dx
   .next2:
   add dx, [player_icon+2]
-  
-  ; 3) Copy a rectangle covering both player's previous and current locations from compositor to framebuffer
   push dx
   push cx
   push bx
   push ax
+
+  push dx ; Now push this rect again so we can use it for blt_compositor_to_framebuffer below
+  push cx
+  push bx
+  push ax
+
+  ; 2)  Copy this rectangle from background to compositor
+  call blt_background_to_compositor
+
+  ; 2) Draw the player icon in its new location in the compositor
+  mov ax, [player_y]
+  add ax, [player_icon+2]
+  dec ax
+  call ypos_to_priority  ; AX = priority of player (taken at foot line)
+  push word [player_y]
+  push word [player_x]
+  push ax                ; Push prioirity calculated earlier
+  mov ax, player_icon    
+  push ax                ; Pointer to player icon W,H
+  call draw_icon
+  
+  ; 3) Copy a rectangle covering both player's previous and current locations from compositor to framebuffer
   call blt_compositor_to_framebuffer
 
   jmp game_loop
