@@ -1,6 +1,6 @@
 # TODO
 
-- Sound
+- Figure out how to make DOSBox stop sound playing
 
 - Animate walking
 
