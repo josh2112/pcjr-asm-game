@@ -73,9 +73,9 @@ fill: ; bp+4 = x, bp+5 = y  |  bp-4 = x1, bp-3 = y, bp-2 = x2, bp-1 = dy
     jne .if_x1_gt_x
 
     mov al, dh
-    stosb                          ; set( x1, y )
+    stosb              ; set( x1, y )
 
-    inc byte [bp-4]     ; x1 += 1
+    inc byte [bp-4]    ; x1 += 1
 
     jmp .while_inside_x1_y
 
@@ -108,27 +108,25 @@ fill: ; bp+4 = x, bp+5 = y  |  bp-4 = x1, bp-3 = y, bp-2 = x2, bp-1 = dy
 
     .x1_equals_x1_plus_1:
 
-    inc byte [bp-4]  ; x1 += 1
+    mov bl, [bp-3]
+    mov bh, [bp-4]   ; x1, y
+    inc bh           ; x1 += 1
 
     .while_x1_lt_x2_and_not_inside_x1_y:
-    ; TODO: we're incrementing and checking x1 in a tight loop here,
-    ; pull it out into a register?
-    mov ah, [bp-4]
-    cmp ah, [bp-2]
+    cmp bh, [bp-2]
     jae .x_equals_x1  ; jmp if x1 >= x2
 
-    mov al, [bp-3]    ; y, x1
+    mov ax, bx
     call calc_pixel_offset
     cmp byte [es:di], dl  ; inside( x1, y )
     je .x_equals_x1
 
-    inc byte [bp-4]  ; x1 += 1
-
+    inc bh
     jmp .while_x1_lt_x2_and_not_inside_x1_y
 
     .x_equals_x1:
-    mov al, [bp-4]
-    mov [bp+4], al  ; x = x1
+    mov [bp-4], bh
+    mov [bp+4], bh  ; x = x1
 
     jmp .while_x1_le_x2
 
