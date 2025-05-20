@@ -6,6 +6,7 @@
 
 %include 'std/stdio.mac.asm'
 %include 'std/math.mac.asm'
+%include 'std/input.mac.asm'
 
 %define DIR_NONE 0
 %define DIR_LEFT 1
@@ -18,14 +19,6 @@
 section .data
 
   originalVideoMode: db 0
-
-  text_prompt: db "> $"
-  text_comma: db ", $"
-  text_acknowledgement: db "Ok$"
-  text_version: db "Foster's Quest v0.1$"
-
-  text_input: times 64 db '$'
-  text_input_offset: dw 0
 
   path_room1: db "room1.vec", 0
 
@@ -73,11 +66,7 @@ mov dx, 1600h    ; line 21 (0x15), col 0 (0x0)
 mov ah, 2       ; Call "set cursor"
 int 10h
 print text_prompt
-;print_cursor
-mov ax, 0a5fh
-mov bx, 07h
-mov cx, 1
-int 10h
+print_cursor
 
 game_loop:
 

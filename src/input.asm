@@ -13,12 +13,18 @@
 
 %include 'std/stdio.asm'
 
-%macro print_cursor 0
-mov ax, 0a5fh
-mov bx, 07h
-mov cx, 1
-int 10h
-%endmacro
+section .data
+
+  text_prompt: db "> $"
+  text_comma: db ", $"
+  text_acknowledgement: db "Ok$"
+  text_version: db "Foster's Quest v0.1$"
+
+  text_input: times 64 db '$'
+  text_input_offset: dw 0
+
+  
+section .text
 
 ; Process any keystrokes in the keyboard buffer. Strategy:
 ; - Look for special key:
@@ -71,10 +77,12 @@ process_keys:
   .testEnter:
     cmp ah, KEYCODE_ENTER
     jne .testBackspace
+    clear_cursor
     call advance_to_next_line
     print text_version
     call advance_to_next_line
     print text_prompt
+    print_cursor
     ret
   .testBackspace:
     cmp al, KEYCHAR_BACKSPACE
@@ -84,7 +92,7 @@ process_keys:
     call process_key_backspace
     ret
   .processChar:
-    cmp dl, 39   ; If we're at the end of the line, don't accept any more characters.
+    cmp dl, 38   ; If we're at the end of the line, don't accept any more characters.
     jge .done
     mov ah, 0x0e
     mov bl, 7     ; Text color
@@ -109,6 +117,12 @@ process_key_backspace:
   mov bl, 7
   int 10h
   mov ax, 0e20h
+  mov bl, 7
+  int 10h
+  mov ax, 0e20h
+  mov bl, 7
+  int 10h
+  mov ax, 0e08h
   mov bl, 7
   int 10h
   mov ax, 0e08h

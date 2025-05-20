@@ -1,6 +1,6 @@
 
-%ifndef MATH_ASM
-%define MATH_ASM
+%ifndef MATH_MAC_ASM
+%define MATH_MAC_ASM
 
 ; al = abs( al )
 %macro abs_al 0
@@ -9,4 +9,4 @@
   sub al, ah
 %endmacro
 
-%endif ; MATH_ASM
+%endif ; MATH_MAC_ASM
