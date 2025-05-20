@@ -44,7 +44,6 @@ mov al, [bp-6]  ; y
 call calc_pixel_offset
 
 mov al, [vec_color]
-nibble_to_byte
 stosb
 
 xor cx, cx

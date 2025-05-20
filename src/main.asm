@@ -28,11 +28,6 @@ section .data
   text_input_offset: dw 0
 
   path_room1: db "room1.vec", 0
-  
-  vec_color: db 0
-  vec_pos: dw 0
-  vec_dest: dw 0
-  vec_clear_color: db 0xff
 
   ptr_err: dw 0
   str_fileError: db "Error reading file$"

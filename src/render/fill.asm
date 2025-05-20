@@ -12,10 +12,7 @@ fill: ; bp+4 = x, bp+5 = y  |  bp-4 = x1, bp-3 = y, bp-2 = x2, bp-1 = dy
     sub sp, 4  ; Make space for locals
 
     mov dl, [vec_clear_color]
-    
-    mov al, [vec_color]
-    nibble_to_byte
-    mov dh, al
+    mov dh, [vec_color]
 
     mov al, [bp+4]    ; x
     mov ah, 1

@@ -1,5 +1,10 @@
 section .data
 
+    vec_color: db 0
+    vec_pos: dw 0
+    vec_dest: dw 0
+    vec_clear_color: db 0xff
+
     label_timer_color: db "cl $"
     label_timer_depth: db "  dp $"
     label_timer_f2b:  db "  f2b $"
@@ -52,6 +57,7 @@ loadRoom:
   cmp al, 'C'          ; Color?
   jne .cmp_moveto
   lodsb
+  nibble_to_byte       ; Extend color nibble to byte
   mov [vec_color], al  ; Read 1 byte into vec_color
   jmp .read_next_cmd
 

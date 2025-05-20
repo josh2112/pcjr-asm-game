@@ -50,7 +50,6 @@ mov byte [bp-8], 0
 .skip_offset_calc:
 
 mov al, [vec_color]
-nibble_to_byte
 stosb
 
 xor dx, dx
