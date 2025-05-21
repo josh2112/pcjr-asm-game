@@ -1,8 +1,10 @@
 # TODO
 
-- Figure out how to make DOSBox stop sound playing
+-   Keep working on sound encoding/parsing!
 
-- Animate walking
+-   EmuJr: Play around with sound emulation?
+
+-   Animate walking
 
 # Timings
 
