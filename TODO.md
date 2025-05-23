@@ -1,10 +1,11 @@
 # TODO
 
--   Keep working on sound encoding/parsing!
+- Python MIDI parser / SND encoder works, and ASM sound decoder / player works as well. But:
 
--   EmuJr: Play around with sound emulation?
+  1. The timing resolution is not great. With the tick resolution of 55 msec, 120 BPM has 9 ticks per beat. This leads to sketchy 8th notes (sometimes 4 ticks long, sometimes 5). Can we change the resolution of the ticker? Or use another timing method?
+  2. With 10-bit frequency resolution of the CSG, octave 2 G# (103.83 Hz, MIDI note 44) is as low as we can go. We'll probably need to make much lower sounds than that. Investigate the other method of sound production (but that only gets us 1 channel at a time!)
 
--   Animate walking
+- Animate walking
 
 # Timings
 

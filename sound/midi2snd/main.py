@@ -2,8 +2,16 @@ import struct
 from collections import defaultdict
 from dataclasses import dataclass
 
+import os
 import click
 import mido
+
+# With the 10-bit resolution of the CSG, octave 2 G# (103.83 Hz, MIDI note 44) is as low as we
+# can go.
+
+# TODO: Sometimes if a note-off for a previous note and a note-on for a new note happen at the same
+# tick, the note-off ends up after the note on, so the note is not heard. Can we sort by tick first,
+# off-then-on second?
 
 
 @dataclass
@@ -31,7 +39,7 @@ class VolumeEvent(ChannelEvent):
         return f"V ch={self.channel}, vol={self.volume}"
 
     def to_snd(self):
-        return struct.pack("<")("V", str(self.channel), f"{self.attenuation:X}h")
+        return struct.pack("<cBB", "V".encode("ascii"), self.channel, self.attenuation)
 
 
 @dataclass
@@ -47,7 +55,10 @@ class NoteEvent(ChannelEvent):
         return round(3_579_540 / (32 * self.frequency))
 
     def __str__(self):
-        return ("F", str(self.channel), f"{self.freq_val:X}h")
+        return f"F ch={self.channel}, note={self.note}"
+
+    def to_snd(self):
+        return struct.pack("<cBH", "F".encode("ascii"), self.channel, self.freq_val)
 
 
 @dataclass
@@ -55,7 +66,10 @@ class WaitEvent(Event):
     duration: int
 
     def __str__(self):
-        return ("W", f"{self.duration:X}h")
+        return f"W dur={self.duration}"
+
+    def to_snd(self):
+        return struct.pack("<cH", "W".encode("ascii"), self.duration)
 
 
 @click.group()
@@ -63,14 +77,12 @@ def cli():
     pass
 
 
-# TODO: A better way of filtering might be to walk the whole list, keeping track of the current volume, frequency
-# and time (in SND) terms per channel, and skipping messages that don't change it.
-
-
 @cli.command(help="Converts a MIDI file to a Fosterquest SND file")
 @click.argument("filename")
 def convert(filename: str):
     mid = mido.MidiFile(filename)
+
+    print(mid)
 
     # Find first tempo message
     us_per_beat = next(e for t in mid.tracks for e in t if e.type == "set_tempo").tempo
@@ -122,17 +134,22 @@ def convert(filename: str):
 
     events.append(WaitEvent(events[-1].pcjr_ticks, eot - events[-1].pcjr_ticks))
 
-    # for e in events:
-    #    print(e)
+    outpath = os.path.join(
+        os.path.dirname(filename),
+        os.path.basename(os.path.splitext(filename)[0]) + ".snd",
+    )
 
-    data, t = [], 0
-    for e in events:
-        if e.pcjr_ticks > t:
-            data.extend(WaitEvent(t, e.pcjr_ticks - t).to_snd())
-            t = e.pcjr_ticks
-        data.extend(e.to_snd())
-
-    print(", ".join(data))
+    with open(outpath, "wb") as f:
+        t = 0
+        for e in events:
+            if e.pcjr_ticks > t:
+                wait = WaitEvent(t, e.pcjr_ticks - t)
+                f.write(wait.to_snd())
+                print(wait)
+                t = e.pcjr_ticks
+            f.write(e.to_snd())
+            print(e)
+        f.write(b"\x00")
 
     return
 

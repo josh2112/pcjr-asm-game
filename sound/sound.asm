@@ -2,17 +2,17 @@
 [org 100h]
 
 section .data
-    sound_1: db 'F', 0, 1ACh, 'V', 0, 0h, 'F', 1, 6AEh, 'V', 1, 0h, 'W', 3h, 'V', 1, Fh, 'W', 3h, 'F', 0, 168h, 'W', 3h, 'F', 1, 8EBh, 'V', 1, 0h, 'W', 3h, 'F', 0, 140h, 'V', 1, Fh, 'W', 6h, 'V', 0, Fh, 'W', 4h
+    sound_1:  incbin "amongus.snd"
     
     sound_ptr: dw 0
     last_tick: dw 0, 0
-    next_sound_counter: db 0
+    next_sound_counter: dw 0
 
 section .text
 
-;in al, 61h     ; TODO: Checkout int 1a, 80?
-;xor al, 60h    ; turn on bits 5 & 6 to select the CSG
-;out 61h, al
+in al, 61h     ; TODO: Checkout int 1a, 80?
+xor al, 60h    ; turn on bits 5 & 6 to select the CSG
+out 61h, al
 
 sub ah, ah
 int 1ah        ; Initialize tick count (for timing)
@@ -45,7 +45,7 @@ int 21h
 handle_sound:
     cmp byte [sound_ptr], 0   ; If no sound is being processed, do nothing
     jz .end
-    cmp byte [next_sound_counter], 0 ; If we're not waiting, parse next sound instruction
+    cmp word [next_sound_counter], 0 ; If we're not waiting, parse next sound instruction
     jz .parse
 
     sub ah, ah
@@ -55,7 +55,7 @@ handle_sound:
     ; Tick count has changed, decrement sound counter
     mov [last_tick], dx
     mov [last_tick+2], cx
-    dec byte [next_sound_counter]
+    dec word [next_sound_counter]
     jmp .end
     
     .parse:
@@ -67,7 +67,6 @@ handle_sound:
     cmp al, 'F'
     jne .test_w
     
-    lodsw
     call sound_setfreq
     mov [sound_ptr], si
     jmp .end
@@ -76,8 +75,8 @@ handle_sound:
     cmp al, 'W'
     jne .test_v
 
-    lodsb
-    mov [next_sound_counter], al
+    lodsw
+    mov [next_sound_counter], ax
     mov [sound_ptr], si
     jmp .end
 
@@ -85,7 +84,6 @@ handle_sound:
     cmp al, 'V'
     jne .eof
 
-    lodsw
     call sound_setvol
     mov [sound_ptr], si
     jmp .end
@@ -96,41 +94,37 @@ handle_sound:
     .end:
     ret
 
-sound_setfreq: ; al = channel, ah = note
-    xchg al, ah
-
+sound_setfreq: ; ds:si = channel, ds:si[1-2] = 10-bit frequency
+    lodsb
     mov cl, 5
-    shl ah, cl  ; Shift channel up to bits 6 & 5
+    shl al, cl
+    xchg al, bl ; channel in BL
 
-    mov dl, al
-    mov dh, dl
-    and dl, 0xf  ; lsn
-    mov cl, 4
-    shr dh, cl   ; msn (really shoud be 6 bits!)
+    lodsw
+    mov bh, al
+    and bh, 0xf ; freq LSN in BH
+    
+    mov cx, 4
+    shr ax, cl
+    xchg ax, cx  ; freq MSN (actually 6 bits) in CL
 
-    mov al, ah
-    or al, dl
-    or al, 0b1_000_0000 ; 1, XX (channel), 0 (change freq), dl (low nibble of freq)
-    out 0c0h, al
-    mov al, dh
-    out 0c0h, al        ; high nibble of freq
-
-    mov al, ah
+    mov al, bl
     or al, bh
-    or al, 0b1_001_0000 ; 1, XX (channel), 1 (change atten), bh (vol)
+    or al, 0b1_000_0000 ; 1, XX (channel), 0 (change freq), bh (low nibble of freq)
     out 0c0h, al
+    mov al, cl
+    out 0c0h, al        ; high 6 bits of freq
     ret
 
-sound_setvol: ; al = channel, ah = vol
-    xchg al, ah
-
+sound_setvol: ; ds:si=channel, ds:si[1] = atten
+    lodsb
     mov cl, 5
-    shl ah, cl  ; Shift channel up to bits 6 & 5
+    shl al, cl
+    xchg al, ah ; channel in AH
 
-    mov bl, 15
-    sub bl, al
-    or ah, bl
-    xchg al, ah
-    or al, 0b1_001_0000 ; 1, XX (channel), 1 (change atten), bh (vol)
+    lodsb       ; atten in AL
+    
+    or al, ah
+    or al, 0b1_001_0000 ; 1, XX (channel), 1 (change atten), al (vol)
     out 0c0h, al
     ret
