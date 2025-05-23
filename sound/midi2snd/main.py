@@ -1,23 +1,17 @@
+import struct
+from collections import defaultdict
 from dataclasses import dataclass
 
 import click
-from mido import MidiFile, MidiTrack
-
-
-class SndEvent:
-    def to_snd(self):
-        pass
+import mido
 
 
 @dataclass
 class Event:
-    time: int
-    pass
+    pcjr_ticks: int
 
-
-@dataclass
-class EndOfTrackEvent(Event):
-    pass
+    def to_snd(self):
+        pass
 
 
 @dataclass
@@ -26,15 +20,23 @@ class ChannelEvent(Event):
 
 
 @dataclass
-class NoteOffEvent(ChannelEvent, SndEvent):
+class VolumeEvent(ChannelEvent):
+    volume: int
+
+    @property
+    def attenuation(self) -> int:
+        return round((1 - (self.volume / 100)) * 15)
+
+    def __str__(self):
+        return f"V ch={self.channel}, vol={self.volume}"
+
     def to_snd(self):
-        pass
+        return struct.pack("<")("V", str(self.channel), f"{self.attenuation:X}h")
 
 
 @dataclass
-class NoteEvent(ChannelEvent, SndEvent):
+class NoteEvent(ChannelEvent):
     note: int
-    velocity: int
 
     @property
     def frequency(self) -> float:
@@ -44,21 +46,16 @@ class NoteEvent(ChannelEvent, SndEvent):
     def freq_val(self) -> int:
         return round(3_579_540 / (32 * self.frequency))
 
-    @property
-    def attenuation(self) -> int:
-        return round(1 - (self.velocity / 100) * 16)
-
-    def to_snd(self):
-        pass
+    def __str__(self):
+        return ("F", str(self.channel), f"{self.freq_val:X}h")
 
 
 @dataclass
-class WaitEvent(SndEvent):
-    midi_ticks: int
-    pcjr_ticks: int
+class WaitEvent(Event):
+    duration: int
 
-    def to_snd(self):
-        pass
+    def __str__(self):
+        return ("W", f"{self.duration:X}h")
 
 
 @click.group()
@@ -73,65 +70,71 @@ def cli():
 @cli.command(help="Converts a MIDI file to a Fosterquest SND file")
 @click.argument("filename")
 def convert(filename: str):
-    mid = MidiFile(filename)
-
-    def parse_track(track: MidiTrack):
-        t = 0
-        for e in track:
-            t += e.time
-            if e.type == "note_on":
-                yield NoteEvent(t, e.channel, e.note, e.velocity)
-            elif e.type == "note_off":
-                yield NoteOffEvent(t, e.channel)
-            elif e.type == "end_of_track":
-                yield EndOfTrackEvent(t)
-
-    events = sorted(
-        (e for t in mid.tracks for e in parse_track(t)), key=lambda e: e.time
-    )
-
-    # Delete duplicate EOTs (every track has one)
-    while isinstance(events[-2], EndOfTrackEvent):
-        del events[-1]
-
-    # Adjust to t=0
-    if events[0].time != 0:
-        for e in events:
-            e.time -= events[0].time
+    mid = mido.MidiFile(filename)
 
     # Find first tempo message
-    us_per_beat = next(m for t in mid.tracks for m in t if m.type == "set_tempo").tempo
+    us_per_beat = next(e for t in mid.tracks for e in t if e.type == "set_tempo").tempo
     msec_per_tick = us_per_beat / mid.ticks_per_beat / 1_000
 
-    # Insert wait events
-    i, t = 0, 0
-    while i < len(events):
-        if events[i].time > t:
-            midi_ticks = events[i].time - t
-            pcjr_ticks = round(midi_ticks * msec_per_tick / 54.9255)
-            t = events[i].time
-            if pcjr_ticks > 0:
-                events.insert(i, WaitEvent(midi_ticks, pcjr_ticks))
-                i += 1
-        i += 1
+    # Convert all relative MIDI ticks into absolute PCjr ticks
+    def convert_time(track: mido.MidiTrack):
+        midi_ticks = 0
+        for e in track:
+            midi_ticks += e.time
+            e.time = round(midi_ticks * msec_per_tick / 54.9255)
+            yield e
 
-    # Remove note-off events where we immediately start playing another note on the same channel
-    channel_on = []
-    to_remove = []
-    for e in reversed(events):
-        if isinstance(e, WaitEvent):
-            channel_on.clear()
-        elif isinstance(e, NoteEvent):
-            channel_on.append(e.channel)
-        elif isinstance(e, NoteOffEvent):
-            if e.channel in channel_on:
-                to_remove.append(e)
+    events: list[mido.Message] = sorted(
+        (e for t in mid.tracks for e in convert_time(t)), key=lambda e: e.time
+    )
 
-    for e in to_remove:
-        events.remove(e)
+    def filter_events(events: list[mido.Message]):
+        @dataclass
+        class ChannelDetails:
+            last_off_time: int = 0
+            volume: int = 0
 
+        channel_details = defaultdict(lambda: ChannelDetails())
+
+        for e in events:
+            if e.type == "note_on":
+                # First, if we have a pending volume-off event that happens before this note, add it
+                if channel_details[e.channel].last_off_time < e.time:
+                    yield VolumeEvent(
+                        channel_details[e.channel].last_off_time, e.channel, 0
+                    )
+                    channel_details[e.channel].volume = 0
+                yield NoteEvent(e.time, e.channel, e.note)
+                # If volume has changed, yield a volume event
+                if e.velocity != channel_details[e.channel].volume:
+                    yield VolumeEvent(e.time, e.channel, e.velocity)
+                    channel_details[e.channel].volume = e.velocity
+            elif e.type == "note_off":
+                # Don't add a volume-off just yet, we may not have to if another note happens immediately
+                channel_details[e.channel].last_off_time = e.time
+
+        for ch, deets in channel_details.items():
+            yield VolumeEvent(deets.last_off_time, ch, 0)
+
+    events: list[Event] = sorted(filter_events(events), key=lambda e: e.pcjr_ticks)
+
+    eot = next(e for t in mid.tracks for e in t if e.type == "end_of_track").time
+
+    events.append(WaitEvent(events[-1].pcjr_ticks, eot - events[-1].pcjr_ticks))
+
+    # for e in events:
+    #    print(e)
+
+    data, t = [], 0
     for e in events:
-        print(e)
+        if e.pcjr_ticks > t:
+            data.extend(WaitEvent(t, e.pcjr_ticks - t).to_snd())
+            t = e.pcjr_ticks
+        data.extend(e.to_snd())
+
+    print(", ".join(data))
+
+    return
 
 
 if __name__ == "__main__":

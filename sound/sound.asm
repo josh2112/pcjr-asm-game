@@ -2,8 +2,7 @@
 [org 100h]
 
 section .data
-    ; 3579540 / (32*freq)
-    sound_1: db 'F', 0, 6bh, 'F', 1, 54h, 'F', 2, 47h, 'W', 18, 'V', 0, 0, 'V', 1, 0, 'V', 2, 0, 0
+    sound_1: db 'F', 0, 1ACh, 'V', 0, 0h, 'F', 1, 6AEh, 'V', 1, 0h, 'W', 3h, 'V', 1, Fh, 'W', 3h, 'F', 0, 168h, 'W', 3h, 'F', 1, 8EBh, 'V', 1, 0h, 'W', 3h, 'F', 0, 140h, 'V', 1, Fh, 'W', 6h, 'V', 0, Fh, 'W', 4h
     
     sound_ptr: dw 0
     last_tick: dw 0, 0
