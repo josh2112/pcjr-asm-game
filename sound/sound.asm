@@ -8,7 +8,20 @@ section .data
     last_tick: dw 0, 0
     next_sound_counter: dw 0
 
+    orig_int08: dw 0
+    orig_int08_countdown: db 1
+
 section .text
+
+mov ax, 3508h ; Get address (35) of system timer interrupt (08) into ES:BX
+int 21h
+mov [orig_int08], bx
+mov [orig_int08+2], es
+mov ax, cs
+mov ds, ax
+mov dx, on_timer
+mov ax, 2508h ; Set address (25) of timer interrupt (1c) from DS:DX
+int 21h
 
 in al, 61h     ; TODO: Checkout int 1a, 80?
 xor al, 60h    ; turn on bits 5 & 6 to select the CSG
@@ -37,6 +50,12 @@ game_loop:
     jmp game_loop
 
 end:
+
+; Restore original int 1ch handler
+mov dx, [orig_int08]
+mov ds, [orig_int08+2]
+mov ax, 2508h ; Set address (25) of timer interrupt (08) from DS:DX
+int 21h
 
 ; Exit the program
 mov ax, 4c00h
@@ -127,4 +146,28 @@ sound_setvol: ; ds:si=channel, ds:si[1] = atten
     or al, ah
     or al, 0b1_001_0000 ; 1, XX (channel), 1 (change atten), al (vol)
     out 0c0h, al
+    ret
+
+on_timer:
+    push ax
+    push bx
+    mov ax, 0e00h + '.'
+    mov bx, 07h
+    int 10h
+    pop bx
+    pop ax
+
+    ;cmp byte [next_sound_counter], 0
+    ;jz .end
+    
+    ; Decrement the counter
+    ;dec byte [next_sound_counter]
+    
+    dec byte [orig_int08_countdown]
+    jz .call_orig_int08
+    iret
+
+    .call_orig_int08
+    mov byte [orig_int08_countdown], 1
+    jmp far [cs:orig_int08]
     ret
