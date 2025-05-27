@@ -8,20 +8,21 @@ DOSBOX_DBG=$(TOOLS)\dosbox\dosbox_with_debugger.exe
 
 DOSBOX_CONF=$(TOOLS)\pcjr.dosbox.conf
 
-SRC_DIR=src
 BUILD_DIR=bin
-ASSETS_DIR=assets
 
 TARGET=sound
 TARGET_COM=$(BUILD_DIR)\$(TARGET).com
-TARGET_LST=$(BUILD_DIR)\$(TARGET).lst
+TARGET_LST=$(TARGET_COM:.com=.lst)
 
 SRC_MAIN=sound.asm
 DEPS=$(TARGET).dep
 
-$(TARGET_COM): $(DEPS)
+$(TARGET_COM): $(DEPS) birdchrp.snd
 	@if not exist $(BUILD_DIR) mkdir $(BUILD_DIR)
-	$(NASM) -f bin -l $(TARGET_LST) -I $(SRC_DIR) -o $@ $(SRC_MAIN)
+	$(NASM) -f bin -l $(TARGET_LST) -o $@ $(SRC_MAIN)
+
+birdchrp.snd: birdchrp.mid
+	cd midi2snd && uv run main.py convert -p 24 ..\$<
 
 run: $(TARGET_COM)
 	$(DOSBOX) -conf $(DOSBOX_CONF) $<
@@ -36,7 +37,6 @@ clean:
 	del /Q $(BUILD_DIR)\*.* $(TARGET_LST) $(DEPS)
 
 $(DEPS):
-	$(NASM) -M -MF $(DEPS) -MT $(TARGET_COM) -I $(SRC_DIR) $(SRC_MAIN)
+	$(NASM) -M -MF $(DEPS) -MT $(TARGET_COM) $(SRC_MAIN)
 
-	
--include $(DEPS)
+include $(DEPS)

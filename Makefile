@@ -14,14 +14,14 @@ ASSETS_DIR=assets
 
 TARGET=fosquest
 TARGET_COM=$(BUILD_DIR)\$(TARGET).com
-TARGET_LST=$(BUILD_DIR)\$(TARGET).lst
+TARGET_LST=$(TARGET_COM:.com=.lst)
 
 SRC_MAIN=$(SRC_DIR)\main.asm
 DEPS=$(TARGET).dep
 
 DISKIMG_DIR=diskimage
 
-$(TARGET_COM): $(DEPS)
+$(TARGET_COM): $(DEPS) assets/icon/player.bin
 	if not exist $(BUILD_DIR) mkdir $(BUILD_DIR)
 	$(NASM) -f bin -l $(TARGET_LST) -I $(SRC_DIR) -o $@ $(SRC_MAIN)
 	copy $(ASSETS_DIR)\*.vec $(BUILD_DIR)
