@@ -13,31 +13,18 @@ section .data
 
 section .text
 
-mov ax, 3508h  ; Get address (35) of system timer interrupt (08) into ES:BX
-int 21h
-mov [orig_int08], bx
-mov [orig_int08+2], es
-mov ax, cs
-mov ds, ax
+mov al, 08h
+mov si, orig_int08
 mov dx, on_timer
-mov ax, 2508h  ; Set address (25) of timer interrupt (08) from DS:DX
-int 21h
+call hook_interrupt  ; Replace int 8 with on_timer
 
-; 00 = channel 0, 11 = write LSB+MSB, 011 = mode 3, 0 = binary counter
-cli
-mov al, 00_11_011_0b
-out 43h, al
-mov ax, 4000h
-out 40h, al  ; Write 0 (LSB of 4000h)
-jmp $+2
-xchg ah, al
-out 40h, al  ; Write 40h (MSB of 4000h)
-sti
+xor ah, ah
+mov bx, 4000h
+call set_timer_frequency ; Make 8253 timer 0 tick 4x as fast
 
 in al, 61h
-xor al, 60h    ; turn on bits 5 & 6 to select the CSG
-out 61h, al
-
+xor al, 60h
+out 61h, al   ; Select CSG as sound source (bits 5 & 6)
 
 mov ax, sound_1
 mov [sound_ptr], ax
@@ -58,11 +45,12 @@ game_loop:
 
 end:
 
-; Restore original int 8 handler
-mov dx, [orig_int08]
-mov ds, [orig_int08+2]
-mov ax, 2508h ; Set address (25) of timer interrupt (08) from DS:DX
-int 21h
+xor ah, ah
+xor bx, bx
+call set_timer_frequency ; Restore original timer frequency
+
+mov si, orig_int08
+call unhook_interrupt     ; Restore original int 8 handler
 
 ; Exit the program
 mov ax, 4c00h
@@ -164,3 +152,48 @@ on_timer:
     .call_orig_int08:
     mov byte [cs:orig_int08_countdown], 4 ; Reset the int 8 countdown
     jmp far [cs:orig_int08]               ; and far-jump to the original int 8
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Saves the address of an interrupt handler and replaces it with a custom one
+; al = int num, si = address to save old handler (4 bytes), dx = address of new handler
+hook_interrupt:
+    mov ah, 35h
+    int 21h      ; Get address (35) of interrupt AL into ES:BX
+    mov [si], bx
+    mov [si+2], es
+    mov di, cs
+    mov ds, di
+    mov ah, 25h 
+    int 21h      ; Set address (25) of timer interrupt (08) from DS:DX
+    ret
+
+; Restores an original interrupt handler
+; al = int num, si = address of old handler (4 bytes)
+unhook_interrupt:
+    ; Restore original int 8 handler
+    mov dx, [si]
+    mov ds, [si+2]
+    mov ah, 25 
+    int 21h      ; Set address (25) of timer interrupt (08) from DS:DX
+    ret
+
+; Reprograms the 8253's timer 0 to a custom frequency
+; ah: timer num, bx: frequency multiplier (where 0ffffh is 1 tick every 54.9255 ms)
+set_timer_frequency:
+    ; 00 = channel 0, 11 = write LSB+MSB, 011 = mode 3, 0 = binary counter
+    cli
+    mov al, ah
+    mov cl, 6
+    shl al, cl  ; Shift channel to upper 2 bits
+    add al, 00_11_011_0b
+    out 43h, al
+    mov dx, 40h
+    add dl, ah
+    xchg ax, bx
+    out dx, al   ; Write LSB
+    jmp $+2      ; "let bus settle" whatever that means
+    xchg ah, al
+    out dx, al   ; Write MSB
+    sti
+    ret
