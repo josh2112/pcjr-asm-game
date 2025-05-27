@@ -167,18 +167,18 @@ def convert(filename: str, transpose: int, tempo: float, verbose: bool):
         os.path.basename(os.path.splitext(filename)[0]) + ".snd",
     )
 
+    def output(e: Event, f):
+        f.write(e.to_snd())
+        if verbose:
+            print(e)
+
     with open(outpath, "wb") as f:
         t = 0
         for e in events:
             if e.pcjr_ticks > t:
-                wait = WaitEvent(t, e.pcjr_ticks - t)
-                f.write(wait.to_snd())
-                if verbose:
-                    print(wait)
+                output(WaitEvent(t, e.pcjr_ticks - t), f)
                 t = e.pcjr_ticks
-            f.write(e.to_snd())
-            if verbose:
-                print(e)
+            output(e, f)
         f.write(b"\x00")
 
     return

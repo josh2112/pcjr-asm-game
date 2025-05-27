@@ -2,7 +2,7 @@
 [org 100h]
 
 section .data
-    sound_1:  incbin "birdchrp.snd"
+    sound_1: incbin "birdchrp.snd"
     
     sound_ptr: dw 0
     sound_loop: db 1

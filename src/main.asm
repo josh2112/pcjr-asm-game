@@ -292,9 +292,11 @@ ypos_to_priority:
 
 %include "std/utils.asm"
 
+%include "std/timer.asm"
+
 %include "std/stdio.asm"
 
-%include "std/timer.asm"
+%include "std/stopwatch.asm"
 
 %include "render/320x200x16.asm"
 
@@ -305,61 +307,6 @@ ypos_to_priority:
 %include "render/fill.asm"
 
 %include "input.asm"
-
-playsound1:
-mov al, 0b6h ; 10110110 = 8255 mode byte:  1011 = channel 2 (lsb then msb), 011 = mode 3 (square wave), 0 = binary divisor
-out 43h, al
-mov ax, 473h  ; 1_193_180/freq (1048) = 473h
-out 42h, al   ; put lsb
-mov al, ah    ; msb to lsb
-out 42h, al   ; msb
-
-in al, 61h    ; get 8255 port b
-or al, 3      ; turn on speaker data and channel 2 gate
-out 61h, al   ; replace 8255 port b
-
-mov cx, 0xffff
-.snd: loop .snd
-
-; to turn off:
-in al, 61h
-and al, 0fch   ; turn off speaker data and channel 2 gate
-out 61h, al
-ret
-
-playsound2:
-
-mov al, 6bh  ; 3_579_540 / (32*f) = 6bh
-mov ah, al
-and al, 0xf  ; lsn
-mov cl, 4
-shr ah, cl   ; msn (really shoud be 6 bits!)
-xchg bx, ax
-
-mov al, 0b1_001_0100 ; 1 (always on), 001 = tone 1 atten, 0100 = vol 4 (0 = full, 16 = off)
-out 0c0h, al
-mov al, 0b1_000_0000
-or al, bl            ; 1 (always on), 000 = tone 1 freq, bl = lsn of frequency
-out 0c0h, al
-mov al, bh
-out 0c0h, al
-
-in al, 61h
-mov ah, al
-or al, 60h    ; turn on bits 5 & 6 to select the CSG
-out 61h, al
-
-mov cx, 0xffff
-.snd: loop .snd
-
-;mov al, ah   ; turn off speaker data and channel 2 gate
-;out 61h, al
-
-in al, 61h
-and al, 40h
-out 61h, al
-
-ret
 
 section .bss
 
