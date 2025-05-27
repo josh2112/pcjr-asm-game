@@ -1,41 +1,27 @@
 %ifndef TIMER_ASM
 %define TIMER_ASM
 
-section .data
-
-    orig_int08: dd 0
-    orig_int08_countdown: db 4
-
 section .text
 
-; Take over int 8 (system timer tick handler) 
-hook_int8:
-    mov ax, 3508h  ; Get address (35) of system timer interrupt (08) into ES:BX
-    int 21h
-    mov [orig_int08], bx
-    mov [orig_int08+2], es
-    mov ax, cs
-    mov ds, ax
-    mov dx, on_timer
-    mov ax, 2508h  ; Set address (25) of timer interrupt (08) from DS:DX
-    int 21h
+; Reprograms the 8253's timer 0 to a custom frequency
+; ah: timer num, bx: frequency multiplier (where 0ffffh is 1 tick every 54.9255 ms)
+set_timer_frequency:
+    ; 00 = channel 0, 11 = write LSB+MSB, 011 = mode 3, 0 = binary counter
+    cli
+    mov al, ah
+    mov cl, 6
+    shl al, cl  ; Shift channel to upper 2 bits
+    add al, 00_11_011_0b
+    out 43h, al
+    mov dx, 40h
+    add dl, ah
+    xchg ax, bx
+    out dx, al   ; Write LSB
+    jmp $+2      ; "let bus settle" whatever that means
+    xchg ah, al
+    out dx, al   ; Write MSB
+    sti
+    ret
 
-; Restore original int 8 handler
-restore_int8:
-    mov dx, [orig_int08]
-    mov ds, [orig_int08+2]
-    mov ax, 2508h ; Set address (25) of timer interrupt (08) from DS:DX
-    int 21h
-
-; 00 = channel 0, 11 = write LSB+MSB, 011 = mode 3, 0 = binary counter
-cli
-mov al, 00_11_011_0b
-out 43h, al
-mov ax, 4000h
-out 40h, al  ; Write 0 (LSB of 4000h)
-jmp $+2
-xchg ah, al
-out 40h, al  ; Write 40h (MSB of 4000h)
-sti
 
 %endif ; TIMER_ASM
