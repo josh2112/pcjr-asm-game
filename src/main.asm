@@ -40,6 +40,8 @@ section .data
   player_icon: dw 14, 16,
     incbin "assets/icon/player.bin"
 
+  redraw_countdown: db 8
+
   sound_1: incbin "assets/sounds/birdchrp.snd"
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -93,13 +95,18 @@ game_loop:
 
   call handle_sound
 
+  dec byte [redraw_countdown]
+  jnz game_loop
+
+  mov byte [redraw_countdown], 8   ; Reset redraw counter
+
   ; Copy player_[x,y] to player_[x,y]_prev
   mov di, ds
   mov es, di
   mov si, player_x
   mov di, player_x_prev
-  mov cx, 2
-  rep movsw   ; Copy 2 words from player_x... to player_x_prev...
+  movsw
+  movsw
 
   call process_keys          ; Check keyboard state
 
@@ -157,8 +164,10 @@ game_loop:
 
   jmp game_loop
 
-
 clean_up:
+
+call mute_all
+
 mov al, [orig_video_mode]
 xor ah, ah
 int 10h                  ; Restore original video mode

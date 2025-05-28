@@ -62,7 +62,7 @@ sound_setfreq: ; ds:si = channel, ds:si[1-2] = 10-bit frequency
 
     lodsw
     mov bh, al
-    and bh, 0xf ; freq LSN in BH
+    and bh, 0fh ; freq LSN in BH
     
     mov cx, 4
     shr ax, cl
@@ -70,7 +70,7 @@ sound_setfreq: ; ds:si = channel, ds:si[1-2] = 10-bit frequency
 
     mov al, bl
     or al, bh
-    or al, 0b1_000_0000 ; 1, XX (channel), 0 (change freq), bh (low nibble of freq)
+    or al, 1_00_0_0000b ; 1, XX (channel), 0 (change freq), bh (low nibble of freq)
     out 0c0h, al
     mov al, cl
     out 0c0h, al        ; high 6 bits of freq
@@ -85,8 +85,18 @@ sound_setvol: ; ds:si=channel, ds:si[1] = atten
     lodsb       ; atten in AL
     
     or al, ah
-    or al, 0b1_001_0000 ; 1, XX (channel), 1 (change atten), al (vol)
+    or al, 1_001_0000b ; 1, XX (channel), 1 (change atten), al (vol)
     out 0c0h, al
     ret
-    
+
+mute_all:
+    mov al, 1_00_1_1111b
+    out 0c0h, al         ; Mute channel 0
+    mov al, 1_01_1_1111b
+    out 0c0h, al         ; Mute channel 1
+    mov al, 1_10_1_1111b
+    out 0c0h, al
+    ret
+
+
 %endif ; SOUND_ASM
