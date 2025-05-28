@@ -23,7 +23,7 @@ wheels = [
 ]
 
 [[package]]
-name = "midi2snd"
+name = "fosquesttools"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [

@@ -18,7 +18,10 @@
 
 section .data
 
-  originalVideoMode: db 0
+  orig_video_mode: db 0
+
+  orig_int08: dd 0
+  orig_int08_countdown: db 4
 
   path_room1: db "room1.vec", 0
 
@@ -34,19 +37,19 @@ section .data
   player_x_prev: dw 160
   player_y_prev: dw 100
 
-player_icon: dw 14, 16,
-  incbin "assets/icon/player.bin"
+  player_icon: dw 14, 16,
+    incbin "assets/icon/player.bin"
+
+  sound_1: incbin "assets/sounds/birdchrp.snd"
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 section .text
 
-call playsound2
-
 ; Get the initial video mode and save it to [originalVideoMode]
 mov ax, 0f00h                ; AH <- 0x0f (get video mode)
 int 10h                      ; Call INT10h fn 0x0f which will store the current video mode in AL
-mov [originalVideoMode], al  ; Store it into the byte pointed to by originalVideoMode.
+mov [orig_video_mode], al    ; Store it into the byte pointed to by originalVideoMode.
 
 call dosbox_fix
 call stack_fix
@@ -54,6 +57,19 @@ call stack_fix
 ; Change the video mode to Mode 9 (320x200, 16 colors)
 mov ax, 0009h                ; AH <- 0x00 (set video mode), AL <- 9 (new mode)
 int 10h                      ; Call INT10h fn 0 to change the video mode
+
+mov al, 08h
+mov si, orig_int08
+mov dx, on_timer
+call hook_interrupt  ; Replace int 8 with on_timer
+
+xor ah, ah
+mov bx, 4000h
+call set_timer_frequency ; Make 8253 timer 0 tick 4x as fast
+
+in al, 61h
+xor al, 60h
+out 61h, al   ; Select CSG as sound source (bits 5 & 6)
 
 mov ax, path_room1
 call loadRoom
@@ -65,12 +81,17 @@ room_loaded:
 ; Move cursor to text window and print a prompt
 sub bh, bh       ; Set page number for cursor move (0 for graphics modes)
 mov dx, 1600h    ; line 21 (0x15), col 0 (0x0)
-mov ah, 2       ; Call "set cursor"
+mov ah, 2        ; Call "set cursor"
 int 10h
 print text_prompt
 print_cursor
 
+mov ax, sound_1
+mov [sound_ptr], ax
+
 game_loop:
+
+  call handle_sound
 
   ; Copy player_[x,y] to player_[x,y]_prev
   mov di, ds
@@ -87,7 +108,7 @@ game_loop:
 
   call move_player
   call bound_player
-  
+
   ; 1) Combine player's previous and current rectangles
   mov ax, [player_x]
   mov cx, [player_x_prev]
@@ -138,23 +159,46 @@ game_loop:
 
 
 clean_up:
-; Change the video mode back to whatever it was before (the value stored in
-; originalVideoMode)
-mov al, [originalVideoMode]
+mov al, [orig_video_mode]
 xor ah, ah
-int 10h
+int 10h                  ; Restore original video mode
 
-mov dx, [ptr_err]
+xor ah, ah
+xor bx, bx
+call set_timer_frequency ; Restore original timer frequency
+
+mov al, 08h
+mov si, orig_int08
+call unhook_interrupt    ; Restore original int 8 handler
+
+mov dx, [ptr_err]        ; Print error message if set
 test dx, dx
 jz exit
 println dx
 
 exit:
-; Exit the program
 mov ax, 4c00h
-int 21h
+int 21h                  ; Exit the program
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+on_timer:
+    cmp word [cs:next_sound_counter], 0 ; Decrement sound counter if nonzero
+    jz .next
+    dec word [cs:next_sound_counter]
+    
+    .next:
+    dec byte [cs:orig_int08_countdown]  ; Decrement int 8 countdown
+    jz .call_orig_int08                 ; If that made it 0, call the original int 8
+    push ax
+    mov al, 20h
+    out 20h, al        ; Acknowledge the interrupt (20h to the 8259 PIC)
+    pop ax
+    iret
+
+    .call_orig_int08:
+    mov byte [cs:orig_int08_countdown], 4 ; Reset the int 8 countdown
+    jmp far [cs:orig_int08]               ; and far-jump to the original int 8
 
 move_player:
   mov bl, [player_walk_dir]
@@ -294,6 +338,8 @@ ypos_to_priority:
 
 %include "std/timer.asm"
 
+%include "std/int.asm"
+
 %include "std/stdio.asm"
 
 %include "std/stopwatch.asm"
@@ -305,6 +351,8 @@ ypos_to_priority:
 %include "render/draw_line.asm"
 
 %include "render/fill.asm"
+
+%include "sound.asm"
 
 %include "input.asm"
 

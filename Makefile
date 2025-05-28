@@ -11,6 +11,7 @@ DOSBOX_CONF=$(TOOLS)\pcjr.dosbox.conf
 SRC_DIR=src
 BUILD_DIR=bin
 ASSETS_DIR=assets
+SOUNDS_DIR=assets/sounds
 
 TARGET=fosquest
 TARGET_COM=$(BUILD_DIR)\$(TARGET).com
@@ -21,10 +22,13 @@ DEPS=$(TARGET).dep
 
 DISKIMG_DIR=diskimage
 
-$(TARGET_COM): $(DEPS) assets/icon/player.bin
+$(TARGET_COM): $(DEPS) assets/icon/player.bin $(SOUNDS_DIR)/birdchrp.snd
 	if not exist $(BUILD_DIR) mkdir $(BUILD_DIR)
 	$(NASM) -f bin -l $(TARGET_LST) -I $(SRC_DIR) -o $@ $(SRC_MAIN)
 	copy $(ASSETS_DIR)\*.vec $(BUILD_DIR)
+
+$(SOUNDS_DIR)/birdchrp.snd: $(SOUNDS_DIR)/birdchrp.mid
+	uv --project fosquesttools run fosquesttools\sound.py convert -p 24 $<
 
 run: $(TARGET_COM)
 	$(DOSBOX) -conf $(DOSBOX_CONF) $<

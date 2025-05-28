@@ -19,11 +19,13 @@ hook_interrupt:
 ; Restores an original interrupt handler
 ; al = int num, si = address of old handler (4 bytes)
 unhook_interrupt:
-    ; Restore original int 8 handler
+    cmp word [si], 0
+    jz .end
     mov dx, [si]
     mov ds, [si+2]
     mov ah, 25 
     int 21h      ; Set address (25) of timer interrupt (08) from DS:DX
+    .end:
     ret
     
 %endif ; INT_ASM
