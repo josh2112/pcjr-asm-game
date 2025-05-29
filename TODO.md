@@ -1,13 +1,11 @@
 # TODO
 
--   After quit / restart, sounds play faster. Looks like I'm restoring the default timer frequency and unhooking INT 8 correctly. Does this happen on the real PCjr?
+- In game_loop, make a cleaner separation between redrawing the screen and the rest of the game logic.
 
--   In game_loop, make a cleaner separation between redrawing the screen and the rest of the game logic.
+  - Process keys should only set a direction vector, not move the player location, on arrow keys. The player location should then be updated only on redraw.
+  - Once this is done, move keyboard processing to game logic section.
 
-    -   Process keys should only set a direction vector, not move the player location, on arrow keys. The player location should then be updated only on redraw.
-    -   Once this is done, move keyboard processing to game logic section.
-
--   Animate walking
+- Animate walking
 
 # Timings
 

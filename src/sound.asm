@@ -16,8 +16,6 @@ handle_sound:
     ja .end
     
     .parse:
-    mov si, cs
-    mov ds, si
     mov si, [sound_ptr]
     lodsb
 

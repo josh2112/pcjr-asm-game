@@ -192,22 +192,22 @@ int 21h                  ; Exit the program
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 on_timer:
-    cmp word [cs:next_sound_counter], 0 ; Decrement sound counter if nonzero
-    jz .next
-    dec word [cs:next_sound_counter]
-    
-    .next:
-    dec byte [cs:orig_int08_countdown]  ; Decrement int 8 countdown
-    jz .call_orig_int08                 ; If that made it 0, call the original int 8
-    push ax
-    mov al, 20h
-    out 20h, al        ; Acknowledge the interrupt (20h to the 8259 PIC)
-    pop ax
-    iret
+  cmp word [cs:next_sound_counter], 0 ; Decrement sound counter if nonzero
+  jz .next
+  dec word [cs:next_sound_counter]
+  
+  .next:
+  dec byte [cs:orig_int08_countdown]  ; Decrement int 8 countdown
+  jz .call_orig_int08                 ; If that made it 0, call the original int 8
+  push ax
+  mov al, 20h
+  out 20h, al        ; Acknowledge the interrupt (20h to the 8259 PIC)
+  pop ax
+  iret
 
-    .call_orig_int08:
-    mov byte [cs:orig_int08_countdown], 4 ; Reset the int 8 countdown
-    jmp far [cs:orig_int08]               ; and far-jump to the original int 8
+  .call_orig_int08:
+  mov byte [cs:orig_int08_countdown], 4 ; Reset the int 8 countdown
+  jmp far [cs:orig_int08]               ; and far-jump to the original int 8
 
 move_player:
   mov bl, [player_walk_dir]

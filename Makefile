@@ -41,6 +41,7 @@ cmd: $(TARGET_COM)
 
 diskimage: $(TARGET_COM)
 	if not exist $(DISKIMG_DIR) mkdir $(DISKIMG_DIR)
+	copy $(TOOLS)\tools\DEBUG.COM $(DISKIMG_DIR)
 	copy $(BUILD_DIR)\*.com $(DISKIMG_DIR)
 	copy $(BUILD_DIR)\*.vec $(DISKIMG_DIR)
 # If this fails, check 1) dev drive is mounted, 2) makeimg.sh doesn't have CRLF line endings
