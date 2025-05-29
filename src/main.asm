@@ -80,6 +80,7 @@ mov word [ptr_err], str_fileError
 jmp clean_up
 
 room_loaded:
+
 ; Move cursor to text window and print a prompt
 sub bh, bh       ; Set page number for cursor move (0 for graphics modes)
 mov dx, 1600h    ; line 21 (0x15), col 0 (0x0)
@@ -93,25 +94,23 @@ mov [sound_ptr], ax
 
 game_loop:
 
-  call handle_sound
-
-  dec byte [redraw_countdown]
-  jnz game_loop
-
-  mov byte [redraw_countdown], 8   ; Reset redraw counter
-
-  ; Copy player_[x,y] to player_[x,y]_prev
-  mov di, ds
-  mov es, di
-  mov si, player_x
-  mov di, player_x_prev
-  movsw
-  movsw
-
   call process_keys          ; Check keyboard state
 
   cmp byte [is_running], 0   ; If not running (ESC key pressed),
-  je clean_up                ; jump out of game loop
+  jz clean_up                ; jump out of game loop
+
+  call handle_sound
+
+  dec byte [redraw_countdown]  ; Is it time to redraw?
+  jnz game_loop
+
+  mov byte [redraw_countdown], 8  ; Reset redraw counter
+
+  ; Copy player_[x,y] to player_[x,y]_prev
+  mov ax, [player_x]
+  mov [player_x_prev], ax
+  mov ax, [player_y]
+  mov [player_y_prev], ax
 
   call move_player
   call bound_player

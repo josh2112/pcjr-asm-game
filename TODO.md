@@ -1,12 +1,5 @@
 # TODO
 
-- Make sound play out of the PC speaker as well as the monitor
-
-- In game_loop, make a cleaner separation between redrawing the screen and the rest of the game logic.
-
-  - Process keys should only set a direction vector, not move the player location, on arrow keys. The player location should then be updated only on redraw.
-  - Once this is done, move keyboard processing to game logic section.
-
 - Animate walking
 
 # Timings
