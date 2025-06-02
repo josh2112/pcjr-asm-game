@@ -13,7 +13,9 @@ import mido
 # tick, the note-off ends up after the note on, so the note is not heard. Can we sort by tick first,
 # off-then-on second?
 
-PCJR_MS_PER_TICK = 54.9255 / 4
+TIMER_FREQ = 1_193_180
+
+PCJR_MS_PER_TICK = 65536 / TIMER_FREQ * 1000 / 4
 
 
 @dataclass

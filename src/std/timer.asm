@@ -4,7 +4,7 @@
 section .text
 
 ; Reprograms an 8253 timer to a custom frequency
-; ah: channel, bx: frequency multiplier (where 0ffffh is 1 tick every 54.9255 ms)
+; ah: channel, bx: frequency multiplier (where 0ffffh is 1 tick every 54.925 ms)
 set_timer_frequency:
     cli
     mov al, ah
