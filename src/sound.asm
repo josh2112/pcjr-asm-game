@@ -83,7 +83,7 @@ sound_setvol: ; ds:si=channel, ds:si[1] = atten
     lodsb       ; atten in AL
     
     or al, ah
-    or al, 1_001_0000b ; 1, XX (channel), 1 (change atten), al (vol)
+    or al, 1_00_1_0000b ; 1, XX (channel), 1 (change atten), al (vol)
     out 0c0h, al
     ret
 
