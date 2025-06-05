@@ -52,7 +52,7 @@ handle_sound:
     .end:
     ret
 
-sound_setfreq: ; ds:si = channel, ds:si[1-2] = 10-bit frequency
+sound_setfreq:
     lodsb
     mov cl, 5
     shl al, cl
@@ -74,7 +74,7 @@ sound_setfreq: ; ds:si = channel, ds:si[1-2] = 10-bit frequency
     out 0c0h, al        ; high 6 bits of freq
     ret
 
-sound_setvol: ; ds:si=channel, ds:si[1] = atten
+sound_setvol:
     lodsb
     mov cl, 5
     shl al, cl
