@@ -220,6 +220,27 @@ move_player:
 bound_player:
   mov ax, [player_y]
   add ax, [player_icon+2]
+
+  cmp ax, 48
+  jle .bounce_back
+  cmp ax, 168
+  jg .bounce_back
+  mov ax, [player_x]
+  cmp ax, 0
+  jl .bounce_back
+  add ax, [player_icon]
+  cmp ax, 320
+  jg .bounce_back
+
+  jmp .didnt_hit_wall
+  
+  .bounce_back:
+  call bounce_back
+  ret
+
+  .didnt_hit_wall:
+  mov ax, [player_y]
+  add ax, [player_icon+2]
   dec ax     ; AX = player foot-line
   ; Compute starting location for player foot-line in framebuffer
   ; SI = (AX * 320 + x) / 2
