@@ -1,0 +1,6 @@
+Ep 15:
+ - Bounding player to screen
+ - Priority checking when drawing icon
+
+Bounding:
+We've already got the player bounded at the top by the pond and bushes...

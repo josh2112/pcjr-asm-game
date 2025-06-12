@@ -1,41 +1,51 @@
 #
 # Makefile for PCjr ASM Game project
 #
-ifeq ($(OS),Windows_NT)
-	NASM="$(USERPROFILE)\AppData\Local\bin\NASM\nasm"
-    DOSBOX="..\pcjr-asm-game-tools\tools\EmuCR-Dosbox-r4059\dosbox"
-	#DOSBOX="D:\Program Files (x86)\DOSBox-0.74-3\dosbox"
-	#DOSBOX="D:\jf334\Documents\Projects\asm-8088\dosbox-svn\dosbox\visualc_net\Release\dosbox"
-	RM=cmd \/C del
-else
-	NASM=nasm
-	RM=rm
-	UNAME_S := $(shell uname -s)
-	ifeq ($(UNAME_S),Darwin)
-		DOSBOX=/Applications/DOSBox-0.74-3.app/Contents/MacOS/DOSBox
-	else # assume Linux
-		DOSBOX=DISPLAY=:0 dosbox
-	endif
-endif
+SHELL := cmd.exe
 
-TARGET=test
-TARGET.COM=$(TARGET).com
+TOOLS=..\tools
 
-MACROS=std/stdio.mac
-SRCS=std/stdlib.asm std/320x200x16.asm std/stdio.asm input.asm
-DEPS=$(MACROS) $(SRCS)
+NASM=$(USERPROFILE)\AppData\Local\bin\NASM\nasm.exe
+DOSBOX=$(TOOLS)\dosbox\dosbox.exe
+DOSBOX_DBG=$(TOOLS)\dosbox\dosbox_with_debugger.exe
 
-NASM_OPTS=-f bin -l $(TARGET).lst
-DOSBOX_OPTS=-conf "..\pcjr-asm-game-tools\dosbox.conf"
+DOSBOX_CONF=$(TOOLS)\pcjr.dosbox.conf
 
-$(TARGET.COM): $(TARGET).asm $(DEPS)
-	$(NASM) $(NASM_OPTS) -o $@ $<
+SRC_DIR=src
+BUILD_DIR=bin
+ASSETS_DIR=assets
 
-run: $(TARGET.COM)
-	$(DOSBOX) $(DOSBOX_OPTS) $^
+TARGET=fosquest
+TARGET_COM=$(BUILD_DIR)\$(TARGET).com
+TARGET_LST=$(TARGET_COM:.com=.lst)
 
-debug: $(TARGET.COM)
-	$(DOSBOX) $(DOSBOX_OPTS) -c "mount c: ." -c "mount d: ../pcjr-asm-game-tools" -c "c:" -c "d:\debug\debug.com c:\test.com"
+SRC_MAIN=$(SRC_DIR)\main.asm
+DEPS=$(TARGET).dep
+
+IMG_ROOM1=$(ASSETS_DIR)\room1.bin
+
+$(TARGET_COM): $(DEPS) $(IMG_ROOM1)
+	if not exist $(BUILD_DIR) mkdir $(BUILD_DIR)
+	$(NASM) -f bin -l $(TARGET_LST) -I $(SRC_DIR) -o $@ $(SRC_MAIN)
+	copy $(ASSETS_DIR)\*.bin $(BUILD_DIR)
+
+$(IMG_ROOM1): $(ASSETS_DIR)\room1\room1-color.png $(ASSETS_DIR)\room1\room1-depth.png
+	uv --directory process-room run -m process-room $(CURDIR)\$(word 1,$^) $(CURDIR)\$(word 2,$^) $(CURDIR)\$@
+
+run: $(TARGET_COM)
+	$(DOSBOX) -conf $(DOSBOX_CONF) $<
+
+debug: $(TARGET_COM)
+	$(DOSBOX_DBG) -conf $(DOSBOX_CONF) -c "mount c: bin" -c "c:" -c "debug $(TARGET).com"
+
+cmd: $(TARGET_COM)
+	$(DOSBOX) -conf $(DOSBOX_CONF) -c "mount c: bin" -c "c:"
 
 clean:
-	$(RM) $(TARGET.COM)
+	del /Q $(BUILD_DIR)\*.* $(DISKIMG_DIR)\*.* $(TARGET_LST) $(DEPS)
+
+$(DEPS):
+	$(NASM) -M -MF $(DEPS) -MT $(TARGET_COM) -I $(SRC_DIR) $(SRC_MAIN)
+
+	
+-include $(DEPS)
