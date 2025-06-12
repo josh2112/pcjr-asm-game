@@ -143,7 +143,7 @@ blt_compositor_to_framebuffer:
 ; draw_icon( icon_ptr, icon_priority, x, y )
 ; Copies icon data into the compositor at the specified position. Black
 ; pixels are treated as transparent (not copied). At each pixel, the
-; corresponding background priority is sampled, and if equal to or greater
+; corresponding background priority is sampled, and if greater
 ; than the icon's priority, the icon pixel is not copied.
 ; Args: bp+4 = icon_ptr, bp+6 = icon_priority, bp+8 = x, bp+10 = y
 ; Locals: bp-2 = icon_w, bp-4 = icon_h
@@ -189,7 +189,7 @@ draw_icon:
   ; If sprite pixel is transparent, skip it.
   test al, al
   jz .afterCopyByte
-  ; If sprite has a lower priority than corresponding base pixel, skip it.
+  ; If sprite has an equal or lower priority than corresponding base pixel, skip it.
   push es
   mov es, [BACKGROUND_SEG]
   mov bl, [es:di]
@@ -198,7 +198,7 @@ draw_icon:
   xchg cl, dl
   pop es
   cmp bl, [bp+6]
-  jge .afterCopyByte
+  jg .afterCopyByte
 
   mov byte [es:di], al
 .afterCopyByte:

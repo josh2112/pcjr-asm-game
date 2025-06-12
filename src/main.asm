@@ -303,17 +303,12 @@ bounce_back:
     ret
 
 ; ypos_to_priority()
-; Converts the Y position in AX to a priority.
-; max( 4, floor( y/12 ) + 1 ) (The min of 4 is so player doesn't disappear near top of screen)
+; Converts the Y position in AX to a priority between 1 and 14 inclusive: floor( y/12 ) + 1
 ypos_to_priority:
   push bx
   mov bx, 12
   div bx
   pop bx
+  inc ax
   xor ah, ah
-  add ax, 1
-  cmp ax, 4
-  jge .done
-  mov ax, 4
-.done:
   ret
