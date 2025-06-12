@@ -134,8 +134,13 @@ game_loop:
   call blt_background_to_compositor
 
   ; 2) Draw the player icon in its new location in the compositor
+  mov ax, [player_y]
+  add ax, [player_icon+2]
+  dec ax
+  call ypos_to_priority  ; AX = priority of player (taken at foot line)
   push word [player_y]
   push word [player_x]
+  push ax                ; Push prioirity calculated earlier
   mov ax, player_icon
   push ax                ; Pointer to player icon W,H
   call draw_icon
@@ -219,10 +224,9 @@ move_player:
 ; hard boundary (mask=0), stop the walking motion and move back one unit.
 bound_player:
   mov ax, [player_y]
-  add ax, [player_icon+2]
-
-  cmp ax, 48
+  cmp ax, 0
   jle .bounce_back
+  add ax, [player_icon+2]
   cmp ax, 168
   jg .bounce_back
   mov ax, [player_x]
@@ -297,3 +301,19 @@ bounce_back:
     dec word [player_y]
   .done:
     ret
+
+; ypos_to_priority()
+; Converts the Y position in AX to a priority.
+; max( 4, floor( y/12 ) + 1 ) (The min of 4 is so player doesn't disappear near top of screen)
+ypos_to_priority:
+  push bx
+  mov bx, 12
+  div bx
+  pop bx
+  xor ah, ah
+  add ax, 1
+  cmp ax, 4
+  jge .done
+  mov ax, 4
+.done:
+  ret

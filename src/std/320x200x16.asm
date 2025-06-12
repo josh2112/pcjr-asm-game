@@ -140,10 +140,12 @@ blt_compositor_to_framebuffer:
   ret 8
 
 
-; draw_icon( icon_ptr, x, y )
+; draw_icon( icon_ptr, icon_priority, x, y )
 ; Copies icon data into the compositor at the specified position. Black
-; pixels are treated as transparent (not copied).
-; Args: bp+4 = icon_ptr, bp+6 = x, bp+8 = y
+; pixels are treated as transparent (not copied). At each pixel, the
+; corresponding background priority is sampled, and if equal to or greater
+; than the icon's priority, the icon pixel is not copied.
+; Args: bp+4 = icon_ptr, bp+6 = icon_priority, bp+8 = x, bp+10 = y
 ; Locals: bp-2 = icon_w, bp-4 = icon_h
 draw_icon:
   push bp
@@ -166,13 +168,13 @@ draw_icon:
   ; Compute which row number we're writing to
   mov ax, [bp-4]  ; Start with icon height
   sub ax, cx      ; Subtract countdown to give us icon row
-  add ax, [bp+8] ; Add Y location to icon row number
+  add ax, [bp+10] ; Add Y location to icon row number
   
   ; Compute starting byte offset for this location in compositor
   ; DI = (AX * 320 + x) / 2
   mov bx, [room_width_px]
   mul bx           ; AX *= 320
-  add ax, [bp+6]   ; ... + x
+  add ax, [bp+8]   ; ... + x
   shr ax, 1        ; ... / 2
   mov di, ax
 
@@ -180,14 +182,26 @@ draw_icon:
   mov cx, [bp-2]
   shr cx, 1        ; Because each byte encodes 2 pixels
 
+  mov dl, 4        ; Will be exchanged with cl to shift inside the loop
+
 .copyByte:
-  mov al, [ds:si]
+  lodsb
   ; If sprite pixel is transparent, skip it.
   test al, al
   jz .afterCopyByte
+  ; If sprite has a lower priority than corresponding base pixel, skip it.
+  push es
+  mov es, [BACKGROUND_SEG]
+  mov bl, [es:di]
+  xchg cl, dl
+  shr bl, cl    ; Get the priority into BL
+  xchg cl, dl
+  pop es
+  cmp bl, [bp+6]
+  jge .afterCopyByte
+
   mov byte [es:di], al
 .afterCopyByte:
-  inc si
   inc di
   loop .copyByte
 
@@ -197,6 +211,6 @@ draw_icon:
   pop es
   mov sp, bp
   pop bp
-  ret 6
+  ret 8
 
 %endif ; _320X200X16_ASM

@@ -30,7 +30,7 @@ $(TARGET_COM): $(DEPS) $(IMG_ROOM1)
 	copy $(ASSETS_DIR)\*.bin $(BUILD_DIR)
 
 $(IMG_ROOM1): $(ASSETS_DIR)\room1\room1-color.png $(ASSETS_DIR)\room1\room1-depth.png
-	uv --directory process-room run -m process-room $(CURDIR)\$(word 1,$^) $(CURDIR)\$(word 2,$^) $(CURDIR)\$@
+	uv --directory process_room run -m process_room $(CURDIR)\$(word 1,$^) $(CURDIR)\$(word 2,$^) $(CURDIR)\$@
 
 run: $(TARGET_COM)
 	$(DOSBOX) -conf $(DOSBOX_CONF) $<
