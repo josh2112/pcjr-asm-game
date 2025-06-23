@@ -23,14 +23,14 @@ loadRoom:
   ; Fill the background buffer with the base color (4)
   mov ax, 0x4444
   mov es, [BACKGROUND_SEG]
-  mov di, 0
+  sub di, di
   mov cx, 320*168/4    ; w * h / pixels_per_word
   rep stosw
 
   ; Fill the framebuffer with white
   mov ax, 0xffff
   mov es, [FRAMEBUFFER_SEG]
-  mov di, 0
+  sub di, di
   mov cx, 320*168/4/4  ; w * h / pixels_per_word / num_banks
   rep stosw
 

@@ -27,31 +27,13 @@ drawline:
   jge .dlh
 
   .dll:
-  xor ax, ax
-  xor cx, cx
-  mov al, bl
-  mov cl, dl
-  cmp ax, cx       ; x0 > x1?
-  jle .dll1
+  cmp bl, dl       ; x0 > x1?
+  jbe .dll1
   xchg bx, dx   ; Reverse src/dest
   .dll1:
   push dx
   push bx
   call draw_line_low
-  jmp .end
-
-  .dlh:
-  xor ax, ax
-  xor cx, cx
-  mov al, bh
-  mov cl, dh
-  cmp ax, cx      ; y0 > y1?
-  jle .dlh1
-  xchg bx, dx    ; Reverse src/dest
-  .dlh1:
-  push dx
-  push bx
-  call draw_line_high
 
   .end:
   ; dest <- pos
@@ -60,3 +42,14 @@ drawline:
 
   pop bx
   ret
+
+  .dlh:
+  cmp bh, dh      ; y0 > y1?
+  jbe .dlh1
+  xchg bx, dx    ; Reverse src/dest
+  .dlh1:
+  push dx
+  push bx
+  call draw_line_high
+  jmp .end
+  

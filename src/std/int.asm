@@ -21,15 +21,15 @@ hook_interrupt:
 ; Restores an original interrupt handler
 ; al = int num, si = address of old handler (4 bytes)
 unhook_interrupt:
-    ;cmp word [si], 0
-    ;jz .end
-    mov dx, [si]
     push ds
-    mov ds, [si+2]
+    lds dx, [si] ; ds:dx = si+2:si
+    mov bx, ds
+    or bx, dx    ; Make sure neither are zero
+    jz .end
     mov ah, 25h
     int 21h      ; Set address (25) of timer interrupt (08) from DS:DX
-    pop ds
     .end:
+    pop ds
     ret
     
 %endif ; INT_ASM

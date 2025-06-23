@@ -1,5 +1,5 @@
 ; draw_line_high( x0, y0, x1, y1 )
-; Used for lines where dy  dx. We loop through each y from y0 to y1, sometimes incrementing or decrementing x.
+; Used for lines where dy > dx. We loop through each y from y0 to y1, sometimes incrementing or decrementing x.
 ; ES must be set to framebuffer!
 ; Args: bp+4 = x0, bp+5 = y0, bp+6 = x1, bp+7 = y1
 ; Locals: bp-7 = x, bp-6 = y, bp-5 = D, bp-3 = xi, bp-2 = dx, bp-1 = dy
