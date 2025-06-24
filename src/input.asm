@@ -34,56 +34,54 @@ process_keys:
   ret
   
   .get_keystroke:
-    mov ah, 0     ; Get the keystroke. AH = scan code, AL = ASCII char
-    int 16h
+  mov ah, 0     ; Get the keystroke. AH = scan code, AL = ASCII char
+  int 16h
 
-  push ax
-  mov ah, 3     ; Get cursor position.  We only care about column, in DL.
-  xor bh, bh
-  int 10h
-  pop ax        ; Now AH = key scan code, AL = ASCII char, DL = cursor column.
-  
   cmp ah, KEYCODE_ESC             ; Process ESC key
   jne .test_dir_keys
   mov byte [is_running], 0
   ret
 
   .test_dir_keys:
-    cmp ah, KEYCODE_LEFT
-    je .toggle_walk
-    cmp ah, KEYCODE_RIGHT
-    je .toggle_walk
-    cmp ah, KEYCODE_UP
-    je .toggle_walk
-    cmp ah, KEYCODE_DOWN
-    je .toggle_walk
+  cmp ah, KEYCODE_LEFT
+  je .toggle_walk
+  cmp ah, KEYCODE_RIGHT
+  je .toggle_walk
+  cmp ah, KEYCODE_UP
+  je .toggle_walk
+  cmp ah, KEYCODE_DOWN
+  je .toggle_walk
 
   .testEnter:
-    cmp ah, KEYCODE_ENTER
-    jne .testBackspace
-    clear_cursor
-    call advance_to_next_line
-    print text_version
-    call advance_to_next_line
-    print text_prompt
-    print_cursor
-    ret
+  push ax
+  mov ah, 3     ; Get cursor position.  We only care about column, in DL.
+  xor bh, bh
+  int 10h
+  pop ax        ; Now AH = key scan code, AL = ASCII char, DL = cursor column.
+
+  cmp ah, KEYCODE_ENTER
+  jne .testBackspace
+  call advance_to_next_line
+  print text_version
+  call advance_to_next_line
+  print text_prompt
+  ret
+
   .testBackspace:
-    cmp al, KEYCHAR_BACKSPACE
-    jne .processChar
-    cmp dl, 3     ; First 2 characters are the prompt, so only jump if we're at >= 3
-    jl .done
-    call process_key_backspace
-    ret
+  cmp al, KEYCHAR_BACKSPACE
+  jne .processChar
+  cmp dl, 3     ; First 2 characters are the prompt, so only jump if we're at >= 3
+  jl .done
+  call process_key_backspace
+  ret
   .processChar:
-    cmp dl, 38   ; If we're at the end of the line, don't accept any more characters.
-    jge .done
-    mov ah, 0x0e
-    mov bl, 7     ; Text color
-    int 10h
-    print_cursor
+  cmp dl, 39   ; If we're at the end of the line, don't accept any more characters.
+  jge .done
+  mov ah, 0x0e
+  mov bl, 7     ; Text color
+  int 10h
   .done:
-    ret
+  ret
 
   .toggle_walk:
     cmp [player_walk_dir], ah
@@ -103,16 +101,9 @@ process_key_backspace:
   mov ax, 0e20h
   mov bl, 7
   int 10h
-  mov ax, 0e20h
-  mov bl, 7
-  int 10h
   mov ax, 0e08h
   mov bl, 7
   int 10h
-  mov ax, 0e08h
-  mov bl, 7
-  int 10h
-  print_cursor
   ret
 
 ; We can't send a line feed - if the cursor is already on the last line, it'll scroll the whole screen. So:
