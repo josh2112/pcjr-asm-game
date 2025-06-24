@@ -3,14 +3,7 @@
 %ifndef INPUT_ASM
 %define INPUT_ASM
 
-%define KEYCODE_ESC 0x01
-%define KEYCODE_ENTER 0x1c
-%define KEYCHAR_BACKSPACE 0x08
-%define KEYCODE_UP 0x48
-%define KEYCODE_LEFT 0x4b
-%define KEYCODE_RIGHT 0x4d
-%define KEYCODE_DOWN 0x50
-
+%include 'std/input.mac.asm'
 %include 'std/stdio.asm'
 
 section .data
@@ -37,43 +30,34 @@ section .text
 process_keys:
   mov ah, 1     ; Check for keystroke.  If ZF is set, no keystroke.
   int 16h
-  jz .done
-  mov ah, 0     ; Get the keystroke. AH = scan code, AL = ASCII char
-  int 16h
+  jnz .get_keystroke
+  ret
+  
+  .get_keystroke:
+    mov ah, 0     ; Get the keystroke. AH = scan code, AL = ASCII char
+    int 16h
+
   push ax
   mov ah, 3     ; Get cursor position.  We only care about column, in DL.
   xor bh, bh
   int 10h
   pop ax        ; Now AH = key scan code, AL = ASCII char, DL = cursor column.
-  .testEsc:
-    cmp ah, KEYCODE_ESC             ; Process ESC key
-    jne .testLeft
-    mov byte [is_running], 0
-    ret
-  .testLeft:
+  
+  cmp ah, KEYCODE_ESC             ; Process ESC key
+  jne .test_dir_keys
+  mov byte [is_running], 0
+  ret
+
+  .test_dir_keys:
     cmp ah, KEYCODE_LEFT
-    jne .testRight
-    mov dl, DIR_LEFT
-    call toggle_walk
-    ret
-  .testRight:
+    je .toggle_walk
     cmp ah, KEYCODE_RIGHT
-    jne .testUp
-    mov dl, DIR_RIGHT
-    call toggle_walk
-    ret
-  .testUp:
+    je .toggle_walk
     cmp ah, KEYCODE_UP
-    jne .testDown
-    mov dl, DIR_UP
-    call toggle_walk
-    ret
-  .testDown:
+    je .toggle_walk
     cmp ah, KEYCODE_DOWN
-    jne .testEnter
-    mov dl, DIR_DOWN
-    call toggle_walk
-    ret
+    je .toggle_walk
+
   .testEnter:
     cmp ah, KEYCODE_ENTER
     jne .testBackspace
@@ -101,13 +85,13 @@ process_keys:
   .done:
     ret
 
-toggle_walk:
-  cmp [player_walk_dir], dl
-  je .stop_walking
-  mov [player_walk_dir], dl
-  ret
+  .toggle_walk:
+    cmp [player_walk_dir], ah
+    je .stop_walking
+    mov [player_walk_dir], ah
+    ret
   .stop_walking:
-    mov byte [player_walk_dir], 0
+    mov byte [player_walk_dir], KEYCODE_NONE
     ret
 
 ; Backspace only backs up the cursor. To actually clear the character we'll

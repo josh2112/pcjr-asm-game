@@ -8,12 +8,6 @@
 %include 'std/math.mac.asm'
 %include 'std/input.mac.asm'
 
-%define DIR_NONE 0
-%define DIR_LEFT 1
-%define DIR_RIGHT 2
-%define DIR_UP 3
-%define DIR_DOWN 4
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 section .data
@@ -30,7 +24,7 @@ section .data
 
   is_running: db 1
 
-  player_walk_dir: db DIR_NONE   ; See "DIR_" defines
+  player_walk_dir: db KEYCODE_NONE   ; See "KEYCODE_" defines
 
   player_x: dw 160
   player_y: dw 100
@@ -210,21 +204,21 @@ on_timer:
 
 move_player:
   mov bl, [player_walk_dir]
-  cmp bl, DIR_LEFT
+  cmp bl, KEYCODE_LEFT
   jne .testRight
   dec word [player_x]
   dec word [player_x]
   .testRight:
-    cmp bl, DIR_RIGHT
+    cmp bl, KEYCODE_RIGHT
     jne .testUp
     inc word [player_x]
     inc word [player_x]
   .testUp:
-    cmp bl, DIR_UP
+    cmp bl, KEYCODE_UP
     jne .testDown
     dec word [player_y]
   .testDown:
-    cmp bl, DIR_DOWN
+    cmp bl, KEYCODE_DOWN
     jne .done
     inc word [player_y]
   .done:
@@ -299,26 +293,26 @@ bound_player:
 
 bounce_back:
   mov byte bl, [player_walk_dir]
-  cmp bl, DIR_LEFT
+  cmp bl, KEYCODE_LEFT
   jne .next
-  mov bl, DIR_NONE
+  mov bl, KEYCODE_NONE
   inc word [player_x]
   inc word [player_x]
   .next:
-    cmp bl, DIR_RIGHT
+    cmp bl, KEYCODE_RIGHT
     jne .next2
-    mov bl, DIR_NONE
+    mov bl, KEYCODE_NONE
     dec word [player_x]
     dec word [player_x]
   .next2:
-    cmp bl, DIR_UP
+    cmp bl, KEYCODE_UP
     jne .next3
-    mov bl, DIR_NONE
+    mov bl, KEYCODE_NONE
     inc word [player_y]
   .next3:
-    cmp bl, DIR_DOWN
+    cmp bl, KEYCODE_DOWN
     jne .done
-    mov bl, DIR_NONE
+    mov bl, KEYCODE_NONE
     dec word [player_y]
   .done:
     mov byte [player_walk_dir], bl

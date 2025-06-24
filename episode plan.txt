@@ -1,14 +1,13 @@
 
-Ep 15:
- - Bounding player to screen
- - Priority checking when drawing icon
-
-Ep 16:
+Ep 17:
  - Going back to INT 16H keyboard handling (instead of replacing INT 9H handler)
  - Text I/O area at bottom of screen
 
-Ep 17:
- - Vector drawing
-
 Ep 18:
+ - dosbox, stack fixes
+
+Ep 19:
  - Sound
+
+Ep 20:
+ - Vector drawing
