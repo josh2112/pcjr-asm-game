@@ -50,16 +50,8 @@ player_icon: dw 14, 16
 
 section .text
 
-; Stack management - Move stack pointer down out of the way
-; so we have three 32KB buffer regions free
-mov bx, ss
-mov ax, [BACKGROUND_SEG]
-sub ax, bx
-mov cl, 4
-shl ax, cl
-mov sp, ax
-xor ax, ax
-push ax
+call dosbox_fix
+call stack_fix
 
 ; Get the initial video mode and save it to [originalVideoMode]
 mov ax, 0x0f00               ; AH <- 0x0f (get video mode)
@@ -297,6 +289,8 @@ ypos_to_priority:
   ret
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+%include "std/utils.asm"
 
 %include "std/stdio.asm"
 
