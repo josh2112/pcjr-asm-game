@@ -12,8 +12,14 @@ section .data
 
 section .text
 
-; Process any keystrokes in the keyboard buffer, handling ESC
-; to quit the program and cursor keys to move the player.
+; Process any keystrokes in the keyboard buffer. Strategy:
+; - Look for special key:
+;   - Handle ESC as quit the program.
+;   - Handle cursor keys to move player around.
+;   - Handle ENTER as submit command -- read all chars on input line into a buffer then process it
+; - Otherwise as long as cursor column is between 2 (start of input line) and 39 (end of input line):
+;   - Handle backspace.
+;   - Pass any other key straight through.
 process_keys:
   mov ah, 1     ; Check for keystroke.  If ZF is set, no keystroke.
   int 16h

@@ -1,4 +1,4 @@
-; test.asm: Playing around with IBM PCjr text, graphics and sound routines
+; main.asm: Playing around with IBM PCjr text, graphics and sound routines
 
 [cpu 8086]
 [org 100h]
@@ -46,10 +46,6 @@ player_icon: dw 14, 16
   db 0x00, 0x00, 0x33, 0x00, 0x33, 0x00, 0x00 ; 15
   db 0x00, 0x66, 0x66, 0x00, 0x66, 0x66, 0x00 ; 16
 
-section .bss
-
-oldInt9h: resb 4
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 section .text
@@ -57,10 +53,10 @@ section .text
 ; Stack management - Move stack pointer down out of the way
 ; so we have three 32KB buffer regions free
 mov bx, ss
-mov cl, 4
-shl bx, cl
-mov ax, 0x8600
+mov ax, [BACKGROUND_SEG]
 sub ax, bx
+mov cl, 4
+shl ax, cl
 mov sp, ax
 xor ax, ax
 push ax
@@ -208,7 +204,7 @@ move_player:
     ret
 
 ; Check the player's feet (bottom scanline of icon). If they have have hit a 
-; hard boundary (mask=0), stop the walking motion and move back one unit.
+; hard boundary (pri=0), stop the walking motion and move back one unit.
 bound_player:
   mov ax, [player_y]
   cmp ax, 0

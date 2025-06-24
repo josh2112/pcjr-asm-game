@@ -5,12 +5,25 @@
 
 section .data
 
-  BACKGROUND_SEG: dw 0x860    ; 0x1030 - 32000 bytes = 0x860
-  COMPOSITOR_SEG: dw 0x1030   ; 0x18000 - 32000 bytes = 0x10300
-  FRAMEBUFFER_SEG: dw 0x1800  ; FB always starts at 0x18000
+  ; Framebuffer -- doubled color nibbles
+  ; One byte = info for 2 pixels (color 1 high, color 2 low)
+  ; 4 banks of 50 scanlines each, as per Mode 9 specs
+  FRAMEBUFFER_SEG: dw 1800h  ; FB always starts at 18000h
+
+  ; Compositor buffer -- doubled color nibbles
+  ; One byte = info for 2 pixels (color 1 high, color 2 low)
+  ; Straight run, so a pixel is addressed by y*160+x/2
+  ; 11700h = 18000h - 26880 bytes
+  COMPOSITOR_SEG: dw 1170h
+  
+  ; Background buffer -- interleaved depth and color nibbles
+  ; One byte = info for 2 pixels (priority high, color low)
+  ; Straight run, so a pixel is addressed by y*160+x/2
+  ; 0ae00h = 11700h - 26880 bytes
+  BACKGROUND_SEG: dw 0ae0h
 
   room_width_px: dw 320
-  room_height_px: dw 200
+  room_height_px: dw 168
 
 section .text
 
