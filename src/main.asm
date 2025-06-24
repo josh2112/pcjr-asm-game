@@ -42,13 +42,13 @@ section .data
 
 section .text
 
-; Get the initial video mode and save it to [originalVideoMode]
-mov ax, 0f00h                ; AH <- 0x0f (get video mode)
-int 10h                      ; Call INT10h fn 0x0f which will store the current video mode in AL
-mov [orig_video_mode], al    ; Store it into the byte pointed to by originalVideoMode.
-
 call dosbox_fix
 call stack_fix
+
+; Get the initial video mode and save it to [orig_video_mode]
+mov ax, 0f00h                ; AH <- 0x0f (get video mode)
+int 10h                      ; Call INT10h fn 0x0f which will store the current video mode in AL
+mov [orig_video_mode], al    ; Store it into the byte pointed to by orig_video_mode.
 
 ; Change the video mode to Mode 9 (320x200, 16 colors)
 mov ax, 0009h                ; AH <- 0x00 (set video mode), AL <- 9 (new mode)

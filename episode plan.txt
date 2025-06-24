@@ -1,9 +1,0 @@
-
-Ep 18:
- - dosbox, stack fixes
-
-Ep 19:
- - Sound
-
-Ep 20:
- - Vector drawing
