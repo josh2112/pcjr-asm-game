@@ -25,8 +25,14 @@ section .data
   room_width_px: dw 320
   room_height_px: dw 168
 
-  ; Nibble-to-byte translation table
-  lut_nibble_to_byte: db 0, 17, 34, 51, 68, 85, 102, 119, 136, 153, 170, 187, 204, 221, 238, 255
+  ; Nibble-to-byte lookup table macro. Produces an array of 0x11, 0x22, ..., 0xff.
+  lut_nibble_to_byte:
+  %assign i 0
+  %rep 16
+    db i
+  %assign i i+17
+  %endrep
+  
 
 section .text
 

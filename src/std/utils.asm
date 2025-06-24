@@ -5,8 +5,8 @@
 ; dosbox_fix(): If we're running in DOSBox, expand our tiny memory allocation to the whole segment.
 dosbox_fix:
 push ds         ; If DOSBox, f000:e061 says 'DOSBox'. Just check the first byte for simplicity.
-mov ax, 0f000h
-mov ds, ax
+mov si, 0f000h
+mov ds, si
 mov si, 0e061h
 cmp byte [ds:si], 'D' 
 pop ds

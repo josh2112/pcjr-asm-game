@@ -1,8 +1,4 @@
 
-Ep 17:
- - Going back to INT 16H keyboard handling (instead of replacing INT 9H handler)
- - Text I/O area at bottom of screen
-
 Ep 18:
  - dosbox, stack fixes
 

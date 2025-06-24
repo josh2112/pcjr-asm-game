@@ -84,13 +84,13 @@ process_keys:
   ret
 
   .toggle_walk:
-    cmp [player_walk_dir], ah
-    je .stop_walking
-    mov [player_walk_dir], ah
-    ret
+  cmp [player_walk_dir], ah
+  je .stop_walking
+  mov [player_walk_dir], ah
+  ret
   .stop_walking:
-    mov byte [player_walk_dir], KEYCODE_NONE
-    ret
+  mov byte [player_walk_dir], KEYCODE_NONE
+  ret
 
 ; Backspace only backs up the cursor. To actually clear the character we'll
 ; send three characters: backspace, space, backspace.
@@ -128,6 +128,5 @@ advance_to_next_line:
     mov dx, 1827h ; Lower right = row 24, col 39
     int 10h
     ret
-
 
 %endif ; INPUT_ASM
