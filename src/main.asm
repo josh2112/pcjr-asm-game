@@ -3,17 +3,7 @@
 [cpu 8086]
 [org 100h]
 
-%define key_esc 0x01
-%define key_up 0x48
-%define key_left 0x4b
-%define key_right 0x4d
-%define key_down 0x50
-
-%define DIR_NONE 0
-%define DIR_LEFT 1
-%define DIR_RIGHT 2
-%define DIR_UP 3
-%define DIR_DOWN 4
+%include 'std/input.mac.asm'
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -27,14 +17,12 @@ path_room1: db "room1.bin", 0
 
 is_running: db 1
 
-player_walk_dir: db DIR_NONE   ; See "DIR_" defines
+player_walk_dir: db KEYCODE_NONE   ; See "KEYCODE_" defines
 
 player_x: dw 160
 player_y: dw 100
 player_x_prev: dw 160
 player_y_prev: dw 100
-
-keyboardState: times 128 db 0
 
 player_icon: dw 14, 16
   db 0x00, 0x00, 0xee, 0xee, 0xee, 0x00, 0x00 ; 1
@@ -85,8 +73,6 @@ mov [originalVideoMode], al  ; Store it into the byte pointed to by originalVide
 mov ax, 0x0009               ; AH <- 0x00 (set video mode), AL <- 9 (new mode)
 int 10h                      ; Call INT10h fn 0 to change the video mode
 
-call install_keyboard_handler
-
 push word [BACKGROUND_SEG]
 mov ax, [room_width_px]
 mov bx, [room_height_px]
@@ -113,6 +99,11 @@ call blt_compositor_to_framebuffer
 
 game_loop:
 
+  call process_keys          ; Check keyboard state
+
+  cmp byte [is_running], 0   ; If not running (ESC key pressed),
+  jz clean_up                ; jump out of game loop
+
   ; Copy player_[x,y] to player_[x,y]_prev
   mov di, ds
   mov es, di
@@ -120,8 +111,6 @@ game_loop:
   mov di, player_x_prev
   mov cx, 2
   rep movsw   ; Copy 2 words from player_x... to player_x_prev...
-
-  call process_key           ; Do something with the key
 
   call move_player
   call bound_player
@@ -172,12 +161,9 @@ game_loop:
   push ax
   call blt_compositor_to_framebuffer
 
-  cmp byte [is_running], 0   ; If still running (ESC key not pressed),
-  jne game_loop                ; jump out of game loop
+  jmp game_loop                ; jump out of game loop
 
 clean_up:
-
-call restore_keyboard_handler
 
 ; Change the video mode back to whatever it was before (the value stored in
 ; originalVideoMode)
@@ -191,30 +177,23 @@ int 21h
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-%include 'std/stdio.mac'
-%include 'std/stdio.asm'
-%include 'std/stdlib.asm'
-%include 'std/320x200x16.asm'
-%include 'input.asm'
-
-
 move_player:
   mov bl, [player_walk_dir]
-  cmp bl, DIR_LEFT
+  cmp bl, KEYCODE_LEFT
   jne .testRight
   dec word [player_x]
   dec word [player_x]
   .testRight:
-    cmp bl, DIR_RIGHT
+    cmp bl, KEYCODE_RIGHT
     jne .testUp
     inc word [player_x]
     inc word [player_x]
   .testUp:
-    cmp bl, DIR_UP
+    cmp bl, KEYCODE_UP
     jne .testDown
     dec word [player_y]
   .testDown:
-    cmp bl, DIR_DOWN
+    cmp bl, KEYCODE_DOWN
     jne .done
     inc word [player_y]
   .done:
@@ -277,27 +256,27 @@ bound_player:
     ret
 
 bounce_back:
-  mov byte bl, [player_walk_dir]
-  cmp bl, DIR_LEFT
+  mov bl, [player_walk_dir]
+  cmp bl, KEYCODE_LEFT
   jne .next
-  mov bl, DIR_NONE
+  mov bl, KEYCODE_NONE
   inc word [player_x]
   inc word [player_x]
   .next:
-    cmp bl, DIR_RIGHT
+    cmp bl, KEYCODE_RIGHT
     jne .next2
-    mov bl, DIR_NONE
+    mov bl, KEYCODE_NONE
     dec word [player_x]
     dec word [player_x]
   .next2:
-    cmp bl, DIR_UP
+    cmp bl, KEYCODE_UP
     jne .next3
-    mov bl, DIR_NONE
+    mov bl, KEYCODE_NONE
     inc word [player_y]
   .next3:
-    cmp bl, DIR_DOWN
+    cmp bl, KEYCODE_DOWN
     jne .done
-    mov bl, DIR_NONE
+    mov bl, KEYCODE_NONE
     dec word [player_y]
   .done:
     ret
@@ -312,3 +291,15 @@ ypos_to_priority:
   inc ax
   xor ah, ah
   ret
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  
+%include "std/stdio.mac"
+
+%include "std/stdio.asm"
+
+%include "std/stdlib.asm"
+
+%include "std/320x200x16.asm"
+
+%include "input.asm"
