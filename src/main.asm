@@ -3,6 +3,7 @@
 [cpu 8086]
 [org 100h]
 
+%include 'std/stdio.mac.asm'
 %include 'std/input.mac.asm'
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -96,6 +97,13 @@ xor ax, ax
 push ax
 push ax
 call blt_compositor_to_framebuffer
+
+; Move cursor to text window and print a prompt
+sub bh, bh       ; Set page number for cursor move (0 for graphics modes)
+mov dx, 1500h    ; line 21 (0x15), col 0 (0x0)
+mov ah, 2        ; Call "set cursor"
+int 10h
+print text_prompt
 
 game_loop:
 
@@ -293,8 +301,6 @@ ypos_to_priority:
   ret
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-  
-%include "std/stdio.mac"
 
 %include "std/stdio.asm"
 

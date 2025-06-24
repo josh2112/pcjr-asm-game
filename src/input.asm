@@ -5,6 +5,11 @@
 
 %include 'std/input.mac.asm'
 
+section .data
+
+  text_prompt: db "> $"
+  text_acknowledgement: db "Ok$"
+
 section .text
 
 ; Process any keystrokes in the keyboard buffer, handling ESC
@@ -16,8 +21,8 @@ process_keys:
   ret
   
   .get_keystroke:
-    mov ah, 0     ; Get the keystroke. AH = scan code, AL = ASCII char
-    int 16h
+  mov ah, 0     ; Get the keystroke. AH = scan code, AL = ASCII char
+  int 16h
     
   cmp ah, KEYCODE_ESC             ; Process ESC key
   jne .test_dir_keys
@@ -25,23 +30,90 @@ process_keys:
   ret
   
   .test_dir_keys:
-    cmp ah, KEYCODE_LEFT
-    je .toggle_walk
-    cmp ah, KEYCODE_RIGHT
-    je .toggle_walk
-    cmp ah, KEYCODE_UP
-    je .toggle_walk
-    cmp ah, KEYCODE_DOWN
-    je .toggle_walk
-    ret
+  cmp ah, KEYCODE_LEFT
+  je .toggle_walk
+  cmp ah, KEYCODE_RIGHT
+  je .toggle_walk
+  cmp ah, KEYCODE_UP
+  je .toggle_walk
+  cmp ah, KEYCODE_DOWN
+  je .toggle_walk
+
+  .testEnter:
+  push ax
+  mov ah, 3     ; Get cursor position.  We only care about column, in DL.
+  xor bh, bh
+  int 10h
+  pop ax        ; Now AH = key scan code, AL = ASCII char, DL = cursor column.
+  
+  cmp ah, KEYCODE_ENTER
+  jne .testBackspace
+  call advance_to_next_line
+  print text_acknowledgement
+  call advance_to_next_line
+  print text_prompt
+  ret
+    
+  .testBackspace:
+  cmp al, KEYCHAR_BACKSPACE
+  jne .processChar
+  cmp dl, 3     ; First 2 characters are the prompt, so only jump if we're at >= 3
+  jl .done
+  call process_key_backspace
+  ret
+  .processChar:
+  cmp dl, 39   ; If we're at the end of the line, don't accept any more characters.
+  jge .done
+  mov ah, 0x0e
+  mov bl, 7     ; Text color
+  int 10h
+  .done:
+  ret
 
   .toggle_walk:
-    cmp [player_walk_dir], ah
-    je .stop_walking
-    mov [player_walk_dir], ah
-    ret
+  cmp [player_walk_dir], ah
+  je .stop_walking
+  mov [player_walk_dir], ah
+  ret
   .stop_walking:
-    mov byte [player_walk_dir], KEYCODE_NONE
+  mov byte [player_walk_dir], KEYCODE_NONE
+  ret
+
+; Backspace only backs up the cursor. To actually clear the character we'll
+; send three characters: backspace, space, backspace.
+process_key_backspace:
+  mov ax, 0e08h
+  mov bl, 7
+  int 10h
+  mov ax, 0e20h
+  mov bl, 7
+  int 10h
+  mov ax, 0e08h
+  mov bl, 7
+  int 10h
+  ret
+
+; We can't send a line feed - if the cursor is already on the last line, it'll scroll the whole screen. So:
+; - Send a carriage return.
+; - Check cursor row: if 24 or less, send a line feed.
+; - Otherwise, scroll just the text area.
+advance_to_next_line:
+  mov ax, 0e0dh
+  int 10h      ; Send carriage return
+  mov ah, 3     
+  xor bh, bh
+  int 10h      ; Get cursor position. Row is in DH.
+  cmp dh, 24
+  jge .scroll
+  mov ax, 0e0ah
+  int 10h      ; Send line feed
+  ret
+  .scroll:
+    mov ax, 0601h  ; Scroll by 1 line
+    xor bh, bh     ; No attributes
+    mov cx, 1500h ; Upper left = row 20, col 0
+    mov dx, 1827h ; Lower right = row 24, col 39
+    int 10h
     ret
 
 %endif ; INPUT_ASM
