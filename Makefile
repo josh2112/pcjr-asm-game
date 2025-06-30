@@ -44,7 +44,9 @@ diskimage: $(TARGET_COM)
 	copy $(TOOLS)\tools\DEBUG.COM $(DISKIMG_DIR)
 	copy $(BUILD_DIR)\*.com $(DISKIMG_DIR)
 	copy $(BUILD_DIR)\*.vec $(DISKIMG_DIR)
-# If this fails, check 1) dev drive is mounted, 2) makeimg.sh doesn't have CRLF line endings
+# If this fails, check
+# 1) dev drive is mounted (sudo mount -t drvfs F: /mnt/f),
+# 2) makeimg.sh doesn't have CRLF line endings
 	wsl -e ../tools/floppyimages/makeimg.sh $(DISKIMG_DIR) -o $(TARGET).img -f
 	copy $(TARGET).img f:
 
