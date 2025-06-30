@@ -1,6 +1,12 @@
 # TODO
 
-- Animate walking
+-   Attempting to step through DEBUG.COM to test my emulator, it wants to run "push 0xf202" (6802f2) which is not valid
+    on the 8086. This blog (https://www.righto.com/2023/07/undocumented-8086-instructions.html) says opcodes 60-6f should
+    act like 70-7f which would make this a "JS +2" followed by a REPNZ prefix (7802,f2). But that doesn't make sense because
+    the next instruction is POPF. Make a quick test program with that segment of DEBUG.COM and see how it's handled on the
+    real PCjr.
+
+-   Animate walking
 
 # Timings
 
