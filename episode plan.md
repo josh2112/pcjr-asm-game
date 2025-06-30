@@ -1,6 +1,6 @@
-Topics left to cover:
+# Topics left to cover:
 
-- Sound
-- Incbin icon
-- Vector drawing
+-   Sound
+-   Incbin icon
+-   Vector drawing
 -

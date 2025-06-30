@@ -36,6 +36,9 @@ run: $(TARGET_COM)
 debug: $(TARGET_COM)
 	$(DOSBOX_DBG) -conf $(DOSBOX_CONF) -c "mount c: bin" -c "c:" -c "debug $(TARGET).com"
 
+debug_debug:
+	$(DOSBOX_DBG) -conf $(DOSBOX_CONF) -c "mount c: ..\tools" -c "c:" -c "debug tools/debug.com"
+
 cmd: $(TARGET_COM)
 	$(DOSBOX) -conf $(DOSBOX_CONF) -c "mount c: bin" -c "c:"
 
