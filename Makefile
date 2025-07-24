@@ -2,7 +2,7 @@ SHELL := cmd.exe
 
 TOOLS=..\tools
 
-NASM=$(USERPROFILE)\AppData\Local\bin\NASM\nasm.exe
+NASM=$(LOCALAPPDATA)\bin\NASM\nasm.exe
 DOSBOX=$(TOOLS)\dosbox\dosbox.exe
 DOSBOX_DBG=$(TOOLS)\dosbox\dosbox_with_debugger.exe
 
@@ -39,8 +39,16 @@ debug: $(TARGET_COM)
 debug_kq1:
 	$(DOSBOX_DBG) -conf $(DOSBOX_CONF) -c "mount c: ..\..\programs\KQ1" -c "c:" -c "debug kq1.com"
 
+disasm_kq1:
+	$(LOCALAPPDATA)\bin\NASM\ndisasm.exe -i -b 16 -o 0x100 -k 0x103,0x29d -s 0xa58 ..\..\programs\KQ1\kq1.com > kq1.lst
+
 cmd: $(TARGET_COM)
 	$(DOSBOX) -conf $(DOSBOX_CONF) -c "mount c: bin" -c "c:"
+
+# Debugging bootable floppy! 1) Alt+Pause to open debugger 2) set breakpoint at 0:7c00 3) F5 to continue
+# 4) run "boot imgname"
+debug_kq1_booter: $(TARGET_COM)
+	$(DOSBOX_DBG) -conf $(DOSBOX_CONF) -c "mount c: F:\source\asm-8088\programs" -c "c:"
 
 diskimage: $(TARGET_COM)
 	if not exist $(DISKIMG_DIR) mkdir $(DISKIMG_DIR)
